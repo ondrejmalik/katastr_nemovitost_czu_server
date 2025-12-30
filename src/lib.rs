@@ -4,12 +4,8 @@ use anyhow::Result;
 use deadpool_postgres::Pool;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use tokio_postgres::Statement;
 
 pub mod endpoints;
-pub struct DBState {
-    pub prepared_statement: Statement,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Majitel {

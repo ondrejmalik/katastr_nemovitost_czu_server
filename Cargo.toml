@@ -10,13 +10,13 @@ name = "htmx_test"
 path = "src/main.rs"
 
 [dependencies]
-axum = { version = "0.8.3", features = ["http2", "ws"] }
+axum = { version = "0.8.3", features = ["http2"] }
 tokio = { version = "1.44.2", features = ["rt-multi-thread"] }
-tower-http = { version = "0.6.2", features = ["compression-full", "fs"] }
+tower-http = { version = "0.6.2", features = ["compression-full"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 tokio-postgres = { version = "0.7.13", features = ["with-chrono-0_4"] }
 anyhow = "1.0.98"
 deadpool-postgres = "0.14.1"
 chrono = { version = "0.4", features = ["serde"] }
-rust_decimal = { version = "1.33", features = ["db-postgres", "db-tokio-postgres", "tokio-postgres"] }
+rust_decimal = { version = "1.33", features = ["db-tokio-postgres", "tokio-postgres"] }
