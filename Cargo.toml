@@ -1,0 +1,25 @@
+[package]
+name = "htmxtest"
+version = "0.1.0"
+edition = "2024"
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "htmx_test"
+path = "src/main.rs"
+
+[dependencies]
+askama = "0.14.0"
+axum = { version = "0.8.3", features = ["http2", "ws"] }
+tokio = { version = "1.44.2", features = ["rt-multi-thread"] }
+tower-http = { version = "0.6.2", features = ["compression-full", "fs"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+tokio-postgres = { version = "0.7.13", features = ["with-chrono-0_4"] }
+postgres-types = "0.2.9"
+anyhow = "1.0.98"
+futures = "0.3.31"
+deadpool-postgres = "0.14.1"
+chrono = { version = "0.4", features = ["serde"] }
+rust_decimal = { version = "1.33", features = ["db-postgres", "db-tokio-postgres", "tokio-postgres"] }
