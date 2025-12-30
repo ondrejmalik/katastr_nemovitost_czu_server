@@ -3,13 +3,10 @@
 use anyhow::Result;
 use deadpool_postgres::Pool;
 use rust_decimal::Decimal;
-use rust_decimal::prelude::FromPrimitive;
 use serde::{Deserialize, Serialize};
 use tokio_postgres::Statement;
 
 pub mod endpoints;
-pub mod templates;
-
 pub struct DBState {
     pub prepared_statement: Statement,
 }

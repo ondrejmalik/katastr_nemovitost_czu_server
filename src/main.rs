@@ -4,7 +4,7 @@ use deadpool_postgres::{Config, ManagerConfig, RecyclingMethod, Runtime};
 use tokio_postgres::NoTls;
 use tower_http::compression::CompressionLayer;
 
-use htmxtest::endpoints::{get_lv_data, get_parceala_data};
+use katastr_server::endpoints::{get_lv_data, get_parceala_data};
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() -> Result<()> {
