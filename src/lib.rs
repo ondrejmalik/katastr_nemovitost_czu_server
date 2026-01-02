@@ -7,12 +7,37 @@ use serde::{Deserialize, Serialize};
 
 pub mod endpoints;
 
+#[derive(Clone)]
+pub struct AppState {
+    pub password: String,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Majitel {
+pub struct MajitelPartA {
     pub jmeno: String,
     pub prijmeni: String,
     pub bydliste: String,
     pub podil_setin: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Majitel {
+    pub id: i32,
+    pub jmeno: String,
+    pub prijmeni: String,
+    pub titul: Option<String>,
+    pub bydliste: Option<String>,
+    pub rodne_cislo: Option<String>,
+    pub ico: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewMajitel {
+    pub jmeno: String,
+    pub prijmeni: String,
+    pub titul: Option<String>,
+    pub bydliste: Option<String>,
+    pub rodne_cislo: Option<String>,
+    pub ico: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,7 +129,7 @@ pub async fn query_and_serialize_part_a(
 
     let mut owners = Vec::new();
     for row in rows {
-        let owner = Majitel {
+        let owner = MajitelPartA {
             jmeno: row.try_get("jmeno")?,
             prijmeni: row.try_get("prijmeni")?,
             bydliste: row.try_get("bydliste")?,
@@ -115,6 +140,98 @@ pub async fn query_and_serialize_part_a(
 
     let json = serde_json::to_value(owners)?;
     Ok(json)
+}
+
+pub async fn query_and_serialize_majitel(
+    pool: Pool,
+    query: &str,
+    params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+) -> Result<serde_json::Value> {
+    let client = pool.get().await?;
+    let rows = client.query(query, params).await?;
+
+    let mut items = Vec::new();
+    for row in rows {
+        let item = Majitel {
+            id: row.try_get("id")?,
+            jmeno: row.try_get("jmeno")?,
+            prijmeni: row.try_get("prijmeni")?,
+            titul: row.try_get("titul")?,
+            bydliste: row.try_get("bydliste")?,
+            rodne_cislo: row.try_get("rodne_cislo")?,
+            ico: row.try_get("ico")?,
+        };
+        items.push(item);
+    }
+
+    let json = serde_json::to_value(items)?;
+    Ok(json)
+}
+
+pub async fn get_majitel(pool: Pool) -> Result<Vec<Majitel>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM majitel", &[]).await?;
+
+    let mut items = Vec::new();
+    for row in rows {
+        let item = Majitel {
+            id: row.try_get("id")?,
+            jmeno: row.try_get("jmeno")?,
+            prijmeni: row.try_get("prijmeni")?,
+            titul: row.try_get("titul")?,
+            bydliste: row.try_get("bydliste")?,
+            rodne_cislo: row.try_get("rodne_cislo")?,
+            ico: row.try_get("ico")?,
+        };
+        items.push(item);
+    }
+    Ok(items)
+}
+
+pub async fn update_majitel(pool: Pool, majitel: Majitel) -> Result<u64> {
+    let client = pool.get().await?;
+    let stmt = "UPDATE majitel SET jmeno = $2, prijmeni = $3, titul = $4, bydliste = $5, rodne_cislo = $6, ico = $7 WHERE id = $1";
+    let rows_affected = client
+        .execute(
+            stmt,
+            &[
+                &majitel.id,
+                &majitel.jmeno,
+                &majitel.prijmeni,
+                &majitel.titul,
+                &majitel.bydliste,
+                &majitel.rodne_cislo,
+                &majitel.ico,
+            ],
+        )
+        .await?;
+    Ok(rows_affected)
+}
+
+pub async fn create_majitel(pool: Pool, majitel: NewMajitel) -> Result<u64> {
+    let client = pool.get().await?;
+    let stmt = "INSERT INTO majitel (jmeno, prijmeni, titul, bydliste, rodne_cislo, ico) VALUES ($1, $2, $3, $4, $5, $6)";
+    let rows_affected = client
+        .execute(
+            stmt,
+            &[
+                &majitel.jmeno,
+                &majitel.prijmeni,
+                &majitel.titul,
+                &majitel.bydliste,
+                &majitel.rodne_cislo,
+                &majitel.ico,
+            ],
+        )
+        .await?;
+    Ok(rows_affected)
+}
+
+pub async fn delete_majitel(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let stmt = "DELETE FROM majitel WHERE id = $1";
+    let rows_affected = client.execute(stmt, &[&id]).await?;
+    Ok(rows_affected)
 }
 
 pub async fn query_and_serialize_part_b(
@@ -302,4 +419,1140 @@ pub async fn query_and_serialize_parcela(
 
     let json = serde_json::to_value(items)?;
     Ok(json)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RizeniPredmetPoznamka {
+    pub predmet: String,
+    pub poznamka: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RizeniUcastnik {
+    pub typ_ucastnika: String,
+    pub ucastnik_jmeno: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RizeniOperace {
+    pub operace_popis: String,
+    pub operace_datum: Option<chrono::NaiveDate>,
+}
+
+pub async fn query_and_serialize_rizeni_predmet_poznamka(
+    pool: Pool,
+    query: &str,
+    params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+) -> Result<serde_json::Value> {
+    let client = pool.get().await?;
+    let rows = client.query(query, params).await?;
+
+    let mut items = Vec::new();
+    for row in rows {
+        let item = RizeniPredmetPoznamka {
+            predmet: row.try_get("predmet")?,
+            poznamka: row.try_get("poznamka")?,
+        };
+        items.push(item);
+    }
+
+    let json = serde_json::to_value(items)?;
+    Ok(json)
+}
+
+pub async fn query_and_serialize_rizeni_ucastnici(
+    pool: Pool,
+    query: &str,
+    params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+) -> Result<serde_json::Value> {
+    let client = pool.get().await?;
+    let rows = client.query(query, params).await?;
+
+    let mut items = Vec::new();
+    for row in rows {
+        let item = RizeniUcastnik {
+            typ_ucastnika: row.try_get("typ_ucastnika")?,
+            ucastnik_jmeno: row.try_get("ucastnik_jmeno")?,
+        };
+        items.push(item);
+    }
+
+    let json = serde_json::to_value(items)?;
+    Ok(json)
+}
+
+pub async fn query_and_serialize_rizeni_operace(
+    pool: Pool,
+    query: &str,
+    params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+) -> Result<serde_json::Value> {
+    let client = pool.get().await?;
+    let rows = client.query(query, params).await?;
+
+    let mut items = Vec::new();
+    for row in rows {
+        let item = RizeniOperace {
+            operace_popis: row.try_get("operace_popis")?,
+            operace_datum: row.try_get("operace_datum")?,
+        };
+        items.push(item);
+    }
+
+    let json = serde_json::to_value(items)?;
+    Ok(json)
+}
+
+// --- Kraj ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Kraj {
+    pub id: i32,
+    pub nazev: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewKraj {
+    pub nazev: String,
+}
+
+pub async fn get_kraj(pool: Pool) -> Result<Vec<Kraj>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM kraj", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| Kraj {
+            id: row.get("id"),
+            nazev: row.get("nazev"),
+        })
+        .collect())
+}
+
+pub async fn create_kraj(pool: Pool, item: NewKraj) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("INSERT INTO kraj (nazev) VALUES ($1)", &[&item.nazev])
+        .await?;
+    Ok(rows)
+}
+
+pub async fn update_kraj(pool: Pool, item: Kraj) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "UPDATE kraj SET nazev = $2 WHERE id = $1",
+            &[&item.id, &item.nazev],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn delete_kraj(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("DELETE FROM kraj WHERE id = $1", &[&id])
+        .await?;
+    Ok(rows)
+}
+
+// --- Okres ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Okres {
+    pub id: i32,
+    pub kraj_id: i32,
+    pub nazev: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewOkres {
+    pub kraj_id: i32,
+    pub nazev: String,
+}
+
+pub async fn get_okres(pool: Pool) -> Result<Vec<Okres>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM okres", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| Okres {
+            id: row.get("id"),
+            kraj_id: row.get("kraj_id"),
+            nazev: row.get("nazev"),
+        })
+        .collect())
+}
+
+pub async fn create_okres(pool: Pool, item: NewOkres) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "INSERT INTO okres (kraj_id, nazev) VALUES ($1, $2)",
+            &[&item.kraj_id, &item.nazev],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn update_okres(pool: Pool, item: Okres) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "UPDATE okres SET kraj_id = $2, nazev = $3 WHERE id = $1",
+            &[&item.id, &item.kraj_id, &item.nazev],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn delete_okres(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("DELETE FROM okres WHERE id = $1", &[&id])
+        .await?;
+    Ok(rows)
+}
+
+// --- Obec ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Obec {
+    pub id: i32,
+    pub okres_id: i32,
+    pub nazev: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewObec {
+    pub okres_id: i32,
+    pub nazev: String,
+}
+
+pub async fn get_obec(pool: Pool) -> Result<Vec<Obec>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM obec", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| Obec {
+            id: row.get("id"),
+            okres_id: row.get("okres_id"),
+            nazev: row.get("nazev"),
+        })
+        .collect())
+}
+
+pub async fn create_obec(pool: Pool, item: NewObec) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "INSERT INTO obec (okres_id, nazev) VALUES ($1, $2)",
+            &[&item.okres_id, &item.nazev],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn update_obec(pool: Pool, item: Obec) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "UPDATE obec SET okres_id = $2, nazev = $3 WHERE id = $1",
+            &[&item.id, &item.okres_id, &item.nazev],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn delete_obec(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("DELETE FROM obec WHERE id = $1", &[&id])
+        .await?;
+    Ok(rows)
+}
+
+// --- KatastralniUzemi ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KatastralniUzemi {
+    pub id: i32,
+    pub obec_id: i32,
+    pub nazev: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewKatastralniUzemi {
+    pub obec_id: i32,
+    pub nazev: String,
+}
+
+pub async fn get_katastralni_uzemi(pool: Pool) -> Result<Vec<KatastralniUzemi>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM katastralni_uzemi", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| KatastralniUzemi {
+            id: row.get("id"),
+            obec_id: row.get("obec_id"),
+            nazev: row.get("nazev"),
+        })
+        .collect())
+}
+
+pub async fn create_katastralni_uzemi(pool: Pool, item: NewKatastralniUzemi) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "INSERT INTO katastralni_uzemi (obec_id, nazev) VALUES ($1, $2)",
+            &[&item.obec_id, &item.nazev],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn update_katastralni_uzemi(pool: Pool, item: KatastralniUzemi) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "UPDATE katastralni_uzemi SET obec_id = $2, nazev = $3 WHERE id = $1",
+            &[&item.id, &item.obec_id, &item.nazev],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn delete_katastralni_uzemi(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("DELETE FROM katastralni_uzemi WHERE id = $1", &[&id])
+        .await?;
+    Ok(rows)
+}
+
+// --- Bpej ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Bpej {
+    pub id: i32,
+    pub hodnota: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewBpej {
+    pub hodnota: i32,
+}
+
+pub async fn get_bpej(pool: Pool) -> Result<Vec<Bpej>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM bpej", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| Bpej {
+            id: row.get("id"),
+            hodnota: row.get("hodnota"),
+        })
+        .collect())
+}
+
+pub async fn create_bpej(pool: Pool, item: NewBpej) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("INSERT INTO bpej (hodnota) VALUES ($1)", &[&item.hodnota])
+        .await?;
+    Ok(rows)
+}
+
+pub async fn update_bpej(pool: Pool, item: Bpej) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "UPDATE bpej SET hodnota = $2 WHERE id = $1",
+            &[&item.id, &item.hodnota],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn delete_bpej(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("DELETE FROM bpej WHERE id = $1", &[&id])
+        .await?;
+    Ok(rows)
+}
+
+// --- TypRizeni ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypRizeni {
+    pub id: i32,
+    pub nazev: String,
+    pub zkratka: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewTypRizeni {
+    pub nazev: String,
+    pub zkratka: String,
+}
+
+pub async fn get_typ_rizeni(pool: Pool) -> Result<Vec<TypRizeni>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM typ_rizeni", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| TypRizeni {
+            id: row.get("id"),
+            nazev: row.get("nazev"),
+            zkratka: row.get("zkratka"),
+        })
+        .collect())
+}
+
+pub async fn create_typ_rizeni(pool: Pool, item: NewTypRizeni) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "INSERT INTO typ_rizeni (nazev, zkratka) VALUES ($1, $2)",
+            &[&item.nazev, &item.zkratka],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn update_typ_rizeni(pool: Pool, item: TypRizeni) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "UPDATE typ_rizeni SET nazev = $2, zkratka = $3 WHERE id = $1",
+            &[&item.id, &item.nazev, &item.zkratka],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn delete_typ_rizeni(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("DELETE FROM typ_rizeni WHERE id = $1", &[&id])
+        .await?;
+    Ok(rows)
+}
+
+// --- TypOperace ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypOperace {
+    pub id: i32,
+    pub popis: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewTypOperace {
+    pub popis: String,
+}
+
+pub async fn get_typ_operace(pool: Pool) -> Result<Vec<TypOperace>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM typ_operace", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| TypOperace {
+            id: row.get("id"),
+            popis: row.get("popis"),
+        })
+        .collect())
+}
+
+pub async fn create_typ_operace(pool: Pool, item: NewTypOperace) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "INSERT INTO typ_operace (popis) VALUES ($1)",
+            &[&item.popis],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn update_typ_operace(pool: Pool, item: TypOperace) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "UPDATE typ_operace SET popis = $2 WHERE id = $1",
+            &[&item.id, &item.popis],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn delete_typ_operace(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("DELETE FROM typ_operace WHERE id = $1", &[&id])
+        .await?;
+    Ok(rows)
+}
+
+// --- TypUcastnika ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypUcastnika {
+    pub id: i32,
+    pub nazev: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewTypUcastnika {
+    pub nazev: String,
+}
+
+pub async fn get_typ_ucastnika(pool: Pool) -> Result<Vec<TypUcastnika>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM typ_ucastnika", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| TypUcastnika {
+            id: row.get("id"),
+            nazev: row.get("nazev"),
+        })
+        .collect())
+}
+
+pub async fn create_typ_ucastnika(pool: Pool, item: NewTypUcastnika) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "INSERT INTO typ_ucastnika (nazev) VALUES ($1)",
+            &[&item.nazev],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn update_typ_ucastnika(pool: Pool, item: TypUcastnika) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "UPDATE typ_ucastnika SET nazev = $2 WHERE id = $1",
+            &[&item.id, &item.nazev],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn delete_typ_ucastnika(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("DELETE FROM typ_ucastnika WHERE id = $1", &[&id])
+        .await?;
+    Ok(rows)
+}
+
+// --- UcastnikRizeni ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UcastnikRizeni {
+    pub id: i32,
+    pub jmeno: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewUcastnikRizeni {
+    pub jmeno: String,
+}
+
+pub async fn get_ucastnik_rizeni(pool: Pool) -> Result<Vec<UcastnikRizeni>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM ucastnik_rizeni", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| UcastnikRizeni {
+            id: row.get("id"),
+            jmeno: row.get("jmeno"),
+        })
+        .collect())
+}
+
+pub async fn create_ucastnik_rizeni(pool: Pool, item: NewUcastnikRizeni) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "INSERT INTO ucastnik_rizeni (jmeno) VALUES ($1)",
+            &[&item.jmeno],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn update_ucastnik_rizeni(pool: Pool, item: UcastnikRizeni) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "UPDATE ucastnik_rizeni SET jmeno = $2 WHERE id = $1",
+            &[&item.id, &item.jmeno],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn delete_ucastnik_rizeni(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("DELETE FROM ucastnik_rizeni WHERE id = $1", &[&id])
+        .await?;
+    Ok(rows)
+}
+
+// --- ListVlastnictvi ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListVlastnictvi {
+    pub id: i32,
+    pub katastralni_uzemi_id: i32,
+    pub cislo_lv: i32,
+    pub vlastnicky_hash: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewListVlastnictvi {
+    pub katastralni_uzemi_id: i32,
+    pub cislo_lv: i32,
+    pub vlastnicky_hash: Option<String>,
+}
+
+pub async fn get_list_vlastnictvi(pool: Pool) -> Result<Vec<ListVlastnictvi>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM list_vlastnictvi", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| ListVlastnictvi {
+            id: row.get("id"),
+            katastralni_uzemi_id: row.get("katastralni_uzemi_id"),
+            cislo_lv: row.get("cislo_lv"),
+            vlastnicky_hash: row.get("vlastnicky_hash"),
+        })
+        .collect())
+}
+
+pub async fn create_list_vlastnictvi(pool: Pool, item: NewListVlastnictvi) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client.execute(
+        "INSERT INTO list_vlastnictvi (katastralni_uzemi_id, cislo_lv, vlastnicky_hash) VALUES ($1, $2, $3)",
+        &[&item.katastralni_uzemi_id, &item.cislo_lv, &item.vlastnicky_hash]
+    ).await?;
+    Ok(rows)
+}
+
+pub async fn update_list_vlastnictvi(pool: Pool, item: ListVlastnictvi) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client.execute(
+        "UPDATE list_vlastnictvi SET katastralni_uzemi_id = $2, cislo_lv = $3, vlastnicky_hash = $4 WHERE id = $1",
+        &[&item.id, &item.katastralni_uzemi_id, &item.cislo_lv, &item.vlastnicky_hash]
+    ).await?;
+    Ok(rows)
+}
+
+pub async fn delete_list_vlastnictvi(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("DELETE FROM list_vlastnictvi WHERE id = $1", &[&id])
+        .await?;
+    Ok(rows)
+}
+
+// --- ParcelaRow ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParcelaRow {
+    pub id: i32,
+    pub parcelni_cislo: i32,
+    pub cast_parcely: i32,
+    pub je_stavebni: bool,
+    pub vymera_metru_ctverecnich: Decimal,
+    pub ulice: Option<String>,
+    pub cislo_popisne: Option<String>,
+    pub katastralni_uzemi_id: i32,
+    pub bpej_id: Option<i32>,
+    pub list_vlastnictvi_id: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewParcelaRow {
+    pub parcelni_cislo: i32,
+    pub cast_parcely: i32,
+    pub je_stavebni: bool,
+    pub vymera_metru_ctverecnich: Decimal,
+    pub ulice: Option<String>,
+    pub cislo_popisne: Option<String>,
+    pub katastralni_uzemi_id: i32,
+    pub bpej_id: Option<i32>,
+    pub list_vlastnictvi_id: i32,
+}
+
+pub async fn get_parcela_row(pool: Pool) -> Result<Vec<ParcelaRow>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM parcela", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| ParcelaRow {
+            id: row.get("id"),
+            parcelni_cislo: row.get("parcelni_cislo"),
+            cast_parcely: row.get("cast_parcely"),
+            je_stavebni: row.get("je_stavebni"),
+            vymera_metru_ctverecnich: row.get("vymera_metru_ctverecnich"),
+            ulice: row.get("ulice"),
+            cislo_popisne: row.get("cislo_popisne"),
+            katastralni_uzemi_id: row.get("katastralni_uzemi_id"),
+            bpej_id: row.get("bpej_id"),
+            list_vlastnictvi_id: row.get("list_vlastnictvi_id"),
+        })
+        .collect())
+}
+
+pub async fn create_parcela_row(pool: Pool, item: NewParcelaRow) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client.execute(
+        "INSERT INTO parcela (parcelni_cislo, cast_parcely, je_stavebni, vymera_metru_ctverecnich, ulice, cislo_popisne, katastralni_uzemi_id, bpej_id, list_vlastnictvi_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        &[&item.parcelni_cislo, &item.cast_parcely, &item.je_stavebni, &item.vymera_metru_ctverecnich, &item.ulice, &item.cislo_popisne, &item.katastralni_uzemi_id, &item.bpej_id, &item.list_vlastnictvi_id]
+    ).await?;
+    Ok(rows)
+}
+
+pub async fn update_parcela_row(pool: Pool, item: ParcelaRow) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client.execute(
+        "UPDATE parcela SET parcelni_cislo = $2, cast_parcely = $3, je_stavebni = $4, vymera_metru_ctverecnich = $5, ulice = $6, cislo_popisne = $7, katastralni_uzemi_id = $8, bpej_id = $9, list_vlastnictvi_id = $10 WHERE id = $1",
+        &[&item.id, &item.parcelni_cislo, &item.cast_parcely, &item.je_stavebni, &item.vymera_metru_ctverecnich, &item.ulice, &item.cislo_popisne, &item.katastralni_uzemi_id, &item.bpej_id, &item.list_vlastnictvi_id]
+    ).await?;
+    Ok(rows)
+}
+
+pub async fn delete_parcela_row(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("DELETE FROM parcela WHERE id = $1", &[&id])
+        .await?;
+    Ok(rows)
+}
+
+// --- Rizeni ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Rizeni {
+    pub id: i32,
+    pub rok: i32,
+    pub cislo_rizeni: i32,
+    pub typ_rizeni_id: i32,
+    pub predmet: String,
+    pub poznamka: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewRizeni {
+    pub rok: i32,
+    pub cislo_rizeni: i32,
+    pub typ_rizeni_id: i32,
+    pub predmet: String,
+    pub poznamka: Option<String>,
+}
+
+pub async fn get_rizeni(pool: Pool) -> Result<Vec<Rizeni>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM rizeni", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| Rizeni {
+            id: row.get("id"),
+            rok: row.get("rok"),
+            cislo_rizeni: row.get("cislo_rizeni"),
+            typ_rizeni_id: row.get("typ_rizeni_id"),
+            predmet: row.get("predmet"),
+            poznamka: row.get("poznamka"),
+        })
+        .collect())
+}
+
+pub async fn create_rizeni(pool: Pool, item: NewRizeni) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client.execute(
+        "INSERT INTO rizeni (rok, cislo_rizeni, typ_rizeni_id, predmet, poznamka) VALUES ($1, $2, $3, $4, $5)",
+        &[&item.rok, &item.cislo_rizeni, &item.typ_rizeni_id, &item.predmet, &item.poznamka]
+    ).await?;
+    Ok(rows)
+}
+
+pub async fn update_rizeni(pool: Pool, item: Rizeni) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client.execute(
+        "UPDATE rizeni SET rok = $2, cislo_rizeni = $3, typ_rizeni_id = $4, predmet = $5, poznamka = $6 WHERE id = $1",
+        &[&item.id, &item.rok, &item.cislo_rizeni, &item.typ_rizeni_id, &item.predmet, &item.poznamka]
+    ).await?;
+    Ok(rows)
+}
+
+pub async fn delete_rizeni(pool: Pool, id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute("DELETE FROM rizeni WHERE id = $1", &[&id])
+        .await?;
+    Ok(rows)
+}
+
+// --- Vlastnictvi ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Vlastnictvi {
+    pub parcela_id: i32,
+    pub majitel_id: i32,
+    pub podil_setin: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewVlastnictvi {
+    pub parcela_id: i32,
+    pub majitel_id: i32,
+    pub podil_setin: i32,
+}
+
+pub async fn get_vlastnictvi(pool: Pool) -> Result<Vec<Vlastnictvi>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM vlastnictvi", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| Vlastnictvi {
+            parcela_id: row.get("parcela_id"),
+            majitel_id: row.get("majitel_id"),
+            podil_setin: row.get("podil_setin"),
+        })
+        .collect())
+}
+
+pub async fn create_vlastnictvi(pool: Pool, item: NewVlastnictvi) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "INSERT INTO vlastnictvi (parcela_id, majitel_id, podil_setin) VALUES ($1, $2, $3)",
+            &[&item.parcela_id, &item.majitel_id, &item.podil_setin],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn update_vlastnictvi(pool: Pool, item: Vlastnictvi) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "UPDATE vlastnictvi SET podil_setin = $3 WHERE parcela_id = $1 AND majitel_id = $2",
+            &[&item.parcela_id, &item.majitel_id, &item.podil_setin],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn delete_vlastnictvi(pool: Pool, parcela_id: i32, majitel_id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "DELETE FROM vlastnictvi WHERE parcela_id = $1 AND majitel_id = $2",
+            &[&parcela_id, &majitel_id],
+        )
+        .await?;
+    Ok(rows)
+}
+
+// --- BremenoParcelaParcela ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BremenoParcelaParcela {
+    pub parcela_id: i32,
+    pub parcela_povinna_id: i32,
+    pub popis: String,
+    pub datum_zrizeni: chrono::NaiveDate,
+    pub datum_pravnich_ucinku: chrono::NaiveDate,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewBremenoParcelaParcela {
+    pub parcela_id: i32,
+    pub parcela_povinna_id: i32,
+    pub popis: String,
+    pub datum_zrizeni: chrono::NaiveDate,
+    pub datum_pravnich_ucinku: chrono::NaiveDate,
+}
+
+pub async fn get_bremeno_parcela_parcela(pool: Pool) -> Result<Vec<BremenoParcelaParcela>> {
+    let client = pool.get().await?;
+    let rows = client
+        .query("SELECT * FROM bremeno_parcela_parcela", &[])
+        .await?;
+    Ok(rows
+        .iter()
+        .map(|row| BremenoParcelaParcela {
+            parcela_id: row.get("parcela_id"),
+            parcela_povinna_id: row.get("parcela_povinna_id"),
+            popis: row.get("popis"),
+            datum_zrizeni: row.get("datum_zrizeni"),
+            datum_pravnich_ucinku: row.get("datum_pravnich_ucinku"),
+        })
+        .collect())
+}
+
+pub async fn create_bremeno_parcela_parcela(
+    pool: Pool,
+    item: NewBremenoParcelaParcela,
+) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client.execute(
+        "INSERT INTO bremeno_parcela_parcela (parcela_id, parcela_povinna_id, popis, datum_zrizeni, datum_pravnich_ucinku) VALUES ($1, $2, $3, $4, $5)",
+        &[&item.parcela_id, &item.parcela_povinna_id, &item.popis, &item.datum_zrizeni, &item.datum_pravnich_ucinku]
+    ).await?;
+    Ok(rows)
+}
+
+pub async fn update_bremeno_parcela_parcela(
+    pool: Pool,
+    item: BremenoParcelaParcela,
+) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client.execute(
+        "UPDATE bremeno_parcela_parcela SET popis = $3, datum_zrizeni = $4, datum_pravnich_ucinku = $5 WHERE parcela_id = $1 AND parcela_povinna_id = $2",
+        &[&item.parcela_id, &item.parcela_povinna_id, &item.popis, &item.datum_zrizeni, &item.datum_pravnich_ucinku]
+    ).await?;
+    Ok(rows)
+}
+
+pub async fn delete_bremeno_parcela_parcela(
+    pool: Pool,
+    parcela_id: i32,
+    parcela_povinna_id: i32,
+) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "DELETE FROM bremeno_parcela_parcela WHERE parcela_id = $1 AND parcela_povinna_id = $2",
+            &[&parcela_id, &parcela_povinna_id],
+        )
+        .await?;
+    Ok(rows)
+}
+
+// --- BremenoParcelaMajitel ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BremenoParcelaMajitel {
+    pub parcela_id: i32,
+    pub majitel_povinny_id: i32,
+    pub popis: String,
+    pub datum_zrizeni: chrono::NaiveDate,
+    pub datum_pravnich_ucinku: chrono::NaiveDate,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewBremenoParcelaMajitel {
+    pub parcela_id: i32,
+    pub majitel_povinny_id: i32,
+    pub popis: String,
+    pub datum_zrizeni: chrono::NaiveDate,
+    pub datum_pravnich_ucinku: chrono::NaiveDate,
+}
+
+pub async fn get_bremeno_parcela_majitel(pool: Pool) -> Result<Vec<BremenoParcelaMajitel>> {
+    let client = pool.get().await?;
+    let rows = client
+        .query("SELECT * FROM bremeno_parcela_majitel", &[])
+        .await?;
+    Ok(rows
+        .iter()
+        .map(|row| BremenoParcelaMajitel {
+            parcela_id: row.get("parcela_id"),
+            majitel_povinny_id: row.get("majitel_povinny_id"),
+            popis: row.get("popis"),
+            datum_zrizeni: row.get("datum_zrizeni"),
+            datum_pravnich_ucinku: row.get("datum_pravnich_ucinku"),
+        })
+        .collect())
+}
+
+pub async fn create_bremeno_parcela_majitel(
+    pool: Pool,
+    item: NewBremenoParcelaMajitel,
+) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client.execute(
+        "INSERT INTO bremeno_parcela_majitel (parcela_id, majitel_povinny_id, popis, datum_zrizeni, datum_pravnich_ucinku) VALUES ($1, $2, $3, $4, $5)",
+        &[&item.parcela_id, &item.majitel_povinny_id, &item.popis, &item.datum_zrizeni, &item.datum_pravnich_ucinku]
+    ).await?;
+    Ok(rows)
+}
+
+pub async fn update_bremeno_parcela_majitel(
+    pool: Pool,
+    item: BremenoParcelaMajitel,
+) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client.execute(
+        "UPDATE bremeno_parcela_majitel SET popis = $3, datum_zrizeni = $4, datum_pravnich_ucinku = $5 WHERE parcela_id = $1 AND majitel_povinny_id = $2",
+        &[&item.parcela_id, &item.majitel_povinny_id, &item.popis, &item.datum_zrizeni, &item.datum_pravnich_ucinku]
+    ).await?;
+    Ok(rows)
+}
+
+pub async fn delete_bremeno_parcela_majitel(
+    pool: Pool,
+    parcela_id: i32,
+    majitel_povinny_id: i32,
+) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "DELETE FROM bremeno_parcela_majitel WHERE parcela_id = $1 AND majitel_povinny_id = $2",
+            &[&parcela_id, &majitel_povinny_id],
+        )
+        .await?;
+    Ok(rows)
+}
+
+// --- Plomba ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Plomba {
+    pub rizeni_id: i32,
+    pub parcela_id: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewPlomba {
+    pub rizeni_id: i32,
+    pub parcela_id: i32,
+}
+
+pub async fn get_plomba(pool: Pool) -> Result<Vec<Plomba>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM plomba", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| Plomba {
+            rizeni_id: row.get("rizeni_id"),
+            parcela_id: row.get("parcela_id"),
+        })
+        .collect())
+}
+
+pub async fn create_plomba(pool: Pool, item: NewPlomba) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "INSERT INTO plomba (rizeni_id, parcela_id) VALUES ($1, $2)",
+            &[&item.rizeni_id, &item.parcela_id],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn delete_plomba(pool: Pool, rizeni_id: i32, parcela_id: i32) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "DELETE FROM plomba WHERE rizeni_id = $1 AND parcela_id = $2",
+            &[&rizeni_id, &parcela_id],
+        )
+        .await?;
+    Ok(rows)
+}
+
+// --- RizeniOperaceRow ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RizeniOperaceRow {
+    pub rizeni_id: i32,
+    pub typ_operace_id: i32,
+    pub datum: chrono::NaiveDate,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewRizeniOperaceRow {
+    pub rizeni_id: i32,
+    pub typ_operace_id: i32,
+    pub datum: chrono::NaiveDate,
+}
+
+pub async fn get_rizeni_operace_row(pool: Pool) -> Result<Vec<RizeniOperaceRow>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM rizeni_operace", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| RizeniOperaceRow {
+            rizeni_id: row.get("rizeni_id"),
+            typ_operace_id: row.get("typ_operace_id"),
+            datum: row.get("datum"),
+        })
+        .collect())
+}
+
+pub async fn create_rizeni_operace_row(pool: Pool, item: NewRizeniOperaceRow) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "INSERT INTO rizeni_operace (rizeni_id, typ_operace_id, datum) VALUES ($1, $2, $3)",
+            &[&item.rizeni_id, &item.typ_operace_id, &item.datum],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn update_rizeni_operace_row(pool: Pool, item: RizeniOperaceRow) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "UPDATE rizeni_operace SET datum = $3 WHERE rizeni_id = $1 AND typ_operace_id = $2",
+            &[&item.rizeni_id, &item.typ_operace_id, &item.datum],
+        )
+        .await?;
+    Ok(rows)
+}
+
+pub async fn delete_rizeni_operace_row(
+    pool: Pool,
+    rizeni_id: i32,
+    typ_operace_id: i32,
+) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client
+        .execute(
+            "DELETE FROM rizeni_operace WHERE rizeni_id = $1 AND typ_operace_id = $2",
+            &[&rizeni_id, &typ_operace_id],
+        )
+        .await?;
+    Ok(rows)
+}
+
+// --- Ucast ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Ucast {
+    pub rizeni_id: i32,
+    pub ucastnik_rizeni_id: i32,
+    pub typ_ucastnika_id: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewUcast {
+    pub rizeni_id: i32,
+    pub ucastnik_rizeni_id: i32,
+    pub typ_ucastnika_id: i32,
+}
+
+pub async fn get_ucast(pool: Pool) -> Result<Vec<Ucast>> {
+    let client = pool.get().await?;
+    let rows = client.query("SELECT * FROM ucast", &[]).await?;
+    Ok(rows
+        .iter()
+        .map(|row| Ucast {
+            rizeni_id: row.get("rizeni_id"),
+            ucastnik_rizeni_id: row.get("ucastnik_rizeni_id"),
+            typ_ucastnika_id: row.get("typ_ucastnika_id"),
+        })
+        .collect())
+}
+
+pub async fn create_ucast(pool: Pool, item: NewUcast) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client.execute(
+        "INSERT INTO ucast (rizeni_id, ucastnik_rizeni_id, typ_ucastnika_id) VALUES ($1, $2, $3)",
+        &[&item.rizeni_id, &item.ucastnik_rizeni_id, &item.typ_ucastnika_id]
+    ).await?;
+    Ok(rows)
+}
+
+pub async fn delete_ucast(
+    pool: Pool,
+    rizeni_id: i32,
+    ucastnik_rizeni_id: i32,
+    typ_ucastnika_id: i32,
+) -> Result<u64> {
+    let client = pool.get().await?;
+    let rows = client.execute("DELETE FROM ucast WHERE rizeni_id = $1 AND ucastnik_rizeni_id = $2 AND typ_ucastnika_id = $3", &[&rizeni_id, &ucastnik_rizeni_id, &typ_ucastnika_id]).await?;
+    Ok(rows)
 }

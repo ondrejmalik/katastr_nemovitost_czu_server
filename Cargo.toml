@@ -6,7 +6,7 @@ edition = "2024"
 path = "src/lib.rs"
 
 [[bin]]
-name = "htmx_test"
+name = "katastr"
 path = "src/main.rs"
 
 [dependencies]
@@ -20,3 +20,5 @@ anyhow = "1.0.98"
 deadpool-postgres = "0.14.1"
 chrono = { version = "0.4", features = ["serde"] }
 rust_decimal = { version = "1.33", features = ["db-tokio-postgres", "tokio-postgres"] }
+clap = { version = "4.5.53", features = ["derive"] }
+bcrypt = "0.17.1"
