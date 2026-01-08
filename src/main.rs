@@ -11,6 +11,7 @@ use katastr_server::{
     typ_rizeni_handler, typ_ucastnika_handler, ucast_handler, ucastnik_rizeni_handler,
     vlastnictvi_handler,
 };
+use mimalloc::MiMalloc;
 use tokio_postgres::NoTls;
 use tower_http::compression::CompressionLayer;
 use tracing::info;
@@ -19,7 +20,28 @@ use tracing_subscriber::EnvFilter;
 // Add mimalloc as the global allocator for improved allocation performance
 // Note: mimalloc crate provides MiMalloc type and a #[global_allocator] wrapper
 #[global_allocator]
-static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+static GLOBAL: MiMalloc = MiMalloc;
+// struct TracingAllocator;
+//
+// unsafe impl GlobalAlloc for TracingAllocator {
+//     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+//         // Print to stderr (so it doesn't mix with program output)
+//         eprintln!(
+//             "ALLOC: {:?} bytes, align: {}",
+//             layout.size(),
+//             layout.align()
+//         );
+//         System.alloc(layout)
+//     }
+//
+//     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+//         eprintln!("FREE:  {:?} bytes", layout.size());
+//         System.dealloc(ptr, layout)
+//     }
+// }
+//
+// #[global_allocator]
+// static A: TracingAllocator = TracingAllocator;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -31,7 +53,7 @@ struct Args {
     no_print: bool,
 }
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 16)]
+#[tokio::main(flavor = "multi_thread", worker_threads = 12)]
 async fn main() -> Result<()> {
     // Parse CLI args first so we can configure tracing based on --no-print
     let args = Args::parse();
@@ -58,7 +80,7 @@ async fn main() -> Result<()> {
     cfg.host = Some("127.0.0.1".to_string());
     cfg.port = Some(5432);
     cfg.password = Some("heslo".to_string());
-    cfg.pool = Some(deadpool_postgres::PoolConfig::new(10));
+    cfg.pool = Some(deadpool_postgres::PoolConfig::new(6));
     cfg.manager = Some(ManagerConfig {
         recycling_method: RecyclingMethod::Fast,
     });
@@ -228,9 +250,7 @@ async fn main() -> Result<()> {
         }))
         .layer(CompressionLayer::new())
         .layer(middleware::from_fn({
-            let s = state.clone();
             move |req, next| {
-                let s = s.clone();
                 async move { track_latency(req, next).await }
             }
         }));

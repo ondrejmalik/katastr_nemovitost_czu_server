@@ -15,10 +15,10 @@ pub async fn query_part_a(
     let mut owners = Vec::new();
     for row in rows {
         let owner = MajitelPartA {
-            jmeno: row.try_get("jmeno")?,
-            prijmeni: row.try_get("prijmeni")?,
-            bydliste: row.try_get("bydliste")?,
-            podil_setin: row.try_get::<_, i32>("podil_setin")? as i64,
+            jmeno: row.try_get(0)?,
+            prijmeni: row.try_get(1)?,
+            bydliste: row.try_get(2)?,
+            podil_setin: row.try_get::<_, i32>(3)? as i64,
         };
         owners.push(owner);
     }
@@ -37,13 +37,13 @@ pub async fn query_majitel_custom(
     let mut items = Vec::new();
     for row in rows {
         let item = Majitel {
-            id: row.try_get("id")?,
-            jmeno: row.try_get("jmeno")?,
-            prijmeni: row.try_get("prijmeni")?,
-            titul: row.try_get("titul")?,
-            bydliste: row.try_get("bydliste")?,
-            rodne_cislo: row.try_get("rodne_cislo")?,
-            ico: row.try_get("ico")?,
+            id: row.try_get(0)?,
+            jmeno: row.try_get(1)?,
+            prijmeni: row.try_get(2)?,
+            titul: row.try_get(3)?,
+            bydliste: row.try_get(4)?,
+            rodne_cislo: row.try_get(5)?,
+            ico: row.try_get(6)?,
         };
         items.push(item);
     }
@@ -53,18 +53,23 @@ pub async fn query_majitel_custom(
 
 pub async fn get_majitel(pool: Pool) -> Result<Vec<Majitel>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM majitel", &[]).await?;
+    let rows = client
+        .query(
+            "SELECT id, jmeno, prijmeni, titul, bydliste, rodne_cislo, ico FROM majitel",
+            &[],
+        )
+        .await?;
 
     let mut items = Vec::new();
     for row in rows {
         let item = Majitel {
-            id: row.try_get("id")?,
-            jmeno: row.try_get("jmeno")?,
-            prijmeni: row.try_get("prijmeni")?,
-            titul: row.try_get("titul")?,
-            bydliste: row.try_get("bydliste")?,
-            rodne_cislo: row.try_get("rodne_cislo")?,
-            ico: row.try_get("ico")?,
+            id: row.try_get(0)?,
+            jmeno: row.try_get(1)?,
+            prijmeni: row.try_get(2)?,
+            titul: row.try_get(3)?,
+            bydliste: row.try_get(4)?,
+            rodne_cislo: row.try_get(5)?,
+            ico: row.try_get(6)?,
         };
         items.push(item);
     }
@@ -128,11 +133,11 @@ pub async fn query_part_b(
     let mut parcels = Vec::new();
     for row in rows {
         let parcel = Parcela {
-            parcelni_cislo: row.try_get::<_, i32>("parcelni_cislo")? as i64,
-            je_stavebni: row.try_get("je_stavebni")?,
-            ulice: row.try_get("ulice")?,
-            cislo_popisne: row.try_get("cislo_popisne")?,
-            nazev_ku: row.try_get("nazev_ku")?,
+            parcelni_cislo: row.try_get::<_, i32>(0)? as i64,
+            je_stavebni: row.try_get(1)?,
+            ulice: row.try_get(2)?,
+            cislo_popisne: row.try_get(3)?,
+            nazev_ku: row.try_get(4)?,
         };
         parcels.push(parcel);
     }
@@ -151,15 +156,15 @@ pub async fn query_part_b_parcela(
     let mut parcels = Vec::new();
     for row in rows {
         let parcel = ParcelaB {
-            popis: row.try_get("popis")?,
-            datum_zrizeni: row.try_get("datum_zrizeni")?,
-            datum_pravnich_ucinku: row.try_get("datum_pravnich_ucinku")?,
-            je_stavebni_opravnena: row.try_get("je_stavebni_opravnena")?,
-            parcelni_cislo_opravnena: row.try_get::<_, i32>("parcelni_cislo_opravnena")? as i64,
-            cast_parcely_opravnena: row.try_get::<_, i32>("cast_parcely_opravnena")? as i64,
-            je_stavebni_povinna: row.try_get("je_stavebni_povinna")?,
-            parcelni_cislo_povinna: row.try_get::<_, i32>("parcelni_cislo_povinna")? as i64,
-            cast_parcely_povinna: row.try_get::<_, i32>("cast_parcely_povinna")? as i64,
+            popis: row.try_get(0)?,
+            datum_zrizeni: row.try_get(1)?,
+            datum_pravnich_ucinku: row.try_get(2)?,
+            je_stavebni_opravnena: row.try_get(3)?,
+            parcelni_cislo_opravnena: row.try_get::<_, i32>(4)? as i64,
+            cast_parcely_opravnena: row.try_get::<_, i32>(5)? as i64,
+            je_stavebni_povinna: row.try_get(6)?,
+            parcelni_cislo_povinna: row.try_get::<_, i32>(7)? as i64,
+            cast_parcely_povinna: row.try_get::<_, i32>(8)? as i64,
         };
         parcels.push(parcel);
     }
@@ -178,17 +183,17 @@ pub async fn query_part_b_majitel(
     let mut items = Vec::new();
     for row in rows {
         let item = MajitelB {
-            popis: row.try_get("popis")?,
-            datum_zrizeni: row.try_get("datum_zrizeni")?,
-            datum_pravnich_ucinku: row.try_get("datum_pravnich_ucinku")?,
-            je_stavebni_opravnena: row.try_get("je_stavebni_opravnena")?,
-            parcelni_cislo_opravnena: row.try_get::<_, i32>("parcelni_cislo_opravnena")? as i64,
-            cast_parcely_opravnena: row.try_get::<_, i32>("cast_parcely_opravnena")? as i64,
-            jmeno_povinny: row.try_get("jmeno_povinny")?,
-            prijmeni_povinny: row.try_get("prijmeni_povinny")?,
-            titul_povinny: row.try_get("titul_povinny")?,
-            rodne_cislo_povinny: row.try_get("rodne_cislo_povinny")?,
-            ico_povinny: row.try_get("ico_povinny")?,
+            popis: row.try_get(0)?,
+            datum_zrizeni: row.try_get(1)?,
+            datum_pravnich_ucinku: row.try_get(2)?,
+            je_stavebni_opravnena: row.try_get(3)?,
+            parcelni_cislo_opravnena: row.try_get::<_, i32>(4)? as i64,
+            cast_parcely_opravnena: row.try_get::<_, i32>(5)? as i64,
+            jmeno_povinny: row.try_get(6)?,
+            prijmeni_povinny: row.try_get(7)?,
+            titul_povinny: row.try_get(8)?,
+            rodne_cislo_povinny: row.try_get(9)?,
+            ico_povinny: row.try_get(10)?,
         };
         items.push(item);
     }
@@ -207,15 +212,15 @@ pub async fn query_part_c(
     let mut items = Vec::new();
     for row in rows {
         let item = PartC {
-            popis: row.try_get("popis")?,
-            datum_zrizeni: row.try_get("datum_zrizeni")?,
-            datum_pravnich_ucinku: row.try_get("datum_pravnich_ucinku")?,
-            je_stavebni_opravnena: row.try_get("je_stavebni_opravnena")?,
-            parcelni_cislo_opravnena: row.try_get::<_, i32>("parcelni_cislo_opravnena")? as i64,
-            cast_parcely_opravnena: row.try_get::<_, i32>("cast_parcely_opravnena")? as i64,
-            je_stavebni_povinna: row.try_get("je_stavebni_povinna")?,
-            parcelni_cislo_povinna: row.try_get::<_, i32>("parcelni_cislo_povinna")? as i64,
-            cast_parcely_povinna: row.try_get::<_, i32>("cast_parcely_povinna")? as i64,
+            popis: row.try_get(0)?,
+            datum_zrizeni: row.try_get(1)?,
+            datum_pravnich_ucinku: row.try_get(2)?,
+            je_stavebni_opravnena: row.try_get(3)?,
+            parcelni_cislo_opravnena: row.try_get::<_, i32>(4)? as i64,
+            cast_parcely_opravnena: row.try_get::<_, i32>(5)? as i64,
+            je_stavebni_povinna: row.try_get(6)?,
+            parcelni_cislo_povinna: row.try_get::<_, i32>(7)? as i64,
+            cast_parcely_povinna: row.try_get::<_, i32>(8)? as i64,
         };
         items.push(item);
     }
@@ -234,13 +239,13 @@ pub async fn query_part_d(
     let mut items = Vec::new();
     for row in rows {
         let item = PartD {
-            je_stavebni: row.try_get("je_stavebni")?,
-            parcelni_cislo: row.try_get::<_, i32>("parcelni_cislo")? as i64,
-            cast_parcely: row.try_get::<_, i32>("cast_parcely")? as i64,
-            nazev_katastralniho_uzemi: row.try_get("nazev_katastralniho_uzemi")?,
-            typ_rizeni_zkratka: row.try_get("typ_rizeni_zkratka")?,
-            cislo_rizeni: row.try_get::<_, i32>("cislo_rizeni")? as i64,
-            rok_rizeni: row.try_get::<_, i32>("rok_rizeni")? as i64,
+            je_stavebni: row.try_get(0)?,
+            parcelni_cislo: row.try_get::<_, i32>(1)? as i64,
+            cast_parcely: row.try_get::<_, i32>(2)? as i64,
+            nazev_katastralniho_uzemi: row.try_get(3)?,
+            typ_rizeni_zkratka: row.try_get(4)?,
+            cislo_rizeni: row.try_get::<_, i32>(5)? as i64,
+            rok_rizeni: row.try_get::<_, i32>(6)? as i64,
         };
         items.push(item);
     }
@@ -259,10 +264,10 @@ pub async fn query_part_f(
     let mut items = Vec::new();
     for row in rows {
         let item = PartF {
-            je_stavebni: row.try_get("je_stavebni")?,
-            parcelni_cislo: row.try_get::<_, i32>("parcelni_cislo")? as i64,
-            cast_parcely: row.try_get::<_, i32>("cast_parcely")? as i64,
-            hodnota: row.try_get::<_, Option<i32>>("hodnota")?.map(|v| v as i64),
+            je_stavebni: row.try_get(0)?,
+            parcelni_cislo: row.try_get::<_, i32>(1)? as i64,
+            cast_parcely: row.try_get::<_, i32>(2)? as i64,
+            hodnota: row.try_get::<_, Option<i32>>(3)?.map(|v| v as i64),
         };
         items.push(item);
     }
@@ -281,15 +286,15 @@ pub async fn query_parcela(
     let mut items = Vec::new();
     for row in rows {
         let item = FindParcela {
-            je_stavebni: row.try_get("je_stavebni")?,
-            parcelni_cislo: row.try_get::<_, i32>("parcelni_cislo")? as i64,
-            cast_parcely: row.try_get::<_, i32>("cast_parcely")? as i64,
+            je_stavebni: row.try_get(0)?,
+            parcelni_cislo: row.try_get::<_, i32>(1)? as i64,
+            cast_parcely: row.try_get::<_, i32>(2)? as i64,
             vymera_metru_ctverecnich: row
-                .try_get::<_, Option<Decimal>>("vymera_metru_ctverecnich")?,
-            ulice: row.try_get("ulice")?,
-            cislo_popisne: row.try_get("cislo_popisne")?,
-            hodnota: row.try_get::<_, Option<i32>>("hodnota")?.map(|v| v as i64),
-            cislo_lv: row.try_get::<_, i32>("cislo_lv")? as i64,
+                .try_get::<_, Option<Decimal>>(3)?,
+            ulice: row.try_get(4)?,
+            cislo_popisne: row.try_get(5)?,
+            hodnota: row.try_get::<_, Option<i32>>(6)?.map(|v| v as i64),
+            cislo_lv: row.try_get::<_, i32>(7)? as i64,
         };
         items.push(item);
     }
@@ -308,8 +313,8 @@ pub async fn query_rizeni_predmet_poznamka(
     let mut items = Vec::new();
     for row in rows {
         let item = RizeniPredmetPoznamka {
-            predmet: row.try_get("predmet")?,
-            poznamka: row.try_get("poznamka")?,
+            predmet: row.try_get(0)?,
+            poznamka: row.try_get(1)?,
         };
         items.push(item);
     }
@@ -328,8 +333,8 @@ pub async fn query_rizeni_ucastnici(
     let mut items = Vec::new();
     for row in rows {
         let item = RizeniUcastnik {
-            typ_ucastnika: row.try_get("typ_ucastnika")?,
-            ucastnik_jmeno: row.try_get("ucastnik_jmeno")?,
+            typ_ucastnika: row.try_get(0)?,
+            ucastnik_jmeno: row.try_get(1)?,
         };
         items.push(item);
     }
@@ -348,8 +353,8 @@ pub async fn query_rizeni_operace(
     let mut items = Vec::new();
     for row in rows {
         let item = RizeniOperace {
-            operace_popis: row.try_get("operace_popis")?,
-            operace_datum: row.try_get("operace_datum")?,
+            operace_popis: row.try_get(0)?,
+            operace_datum: row.try_get(1)?,
         };
         items.push(item);
     }
@@ -360,12 +365,12 @@ pub async fn query_rizeni_operace(
 // --- Kraj ---
 pub async fn get_kraj(pool: Pool) -> Result<Vec<Kraj>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM kraj", &[]).await?;
+    let rows = client.query("SELECT id, nazev FROM kraj", &[]).await?;
     Ok(rows
         .iter()
         .map(|row| Kraj {
-            id: row.get("id"),
-            nazev: row.get("nazev"),
+            id: row.get(0),
+            nazev: row.get(1),
         })
         .collect())
 }
@@ -400,13 +405,15 @@ pub async fn delete_kraj(pool: Pool, id: i32) -> Result<u64> {
 // --- Okres ---
 pub async fn get_okres(pool: Pool) -> Result<Vec<Okres>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM okres", &[]).await?;
+    let rows = client
+        .query("SELECT id, kraj_id, nazev FROM okres", &[])
+        .await?;
     Ok(rows
         .iter()
         .map(|row| Okres {
-            id: row.get("id"),
-            kraj_id: row.get("kraj_id"),
-            nazev: row.get("nazev"),
+            id: row.get(0),
+            kraj_id: row.get(1),
+            nazev: row.get(2),
         })
         .collect())
 }
@@ -444,13 +451,15 @@ pub async fn delete_okres(pool: Pool, id: i32) -> Result<u64> {
 // --- Obec ---
 pub async fn get_obec(pool: Pool) -> Result<Vec<Obec>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM obec", &[]).await?;
+    let rows = client
+        .query("SELECT id, okres_id, nazev FROM obec", &[])
+        .await?;
     Ok(rows
         .iter()
         .map(|row| Obec {
-            id: row.get("id"),
-            okres_id: row.get("okres_id"),
-            nazev: row.get("nazev"),
+            id: row.get(0),
+            okres_id: row.get(1),
+            nazev: row.get(2),
         })
         .collect())
 }
@@ -488,13 +497,15 @@ pub async fn delete_obec(pool: Pool, id: i32) -> Result<u64> {
 // --- KatastralniUzemi ---
 pub async fn get_katastralni_uzemi(pool: Pool) -> Result<Vec<KatastralniUzemi>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM katastralni_uzemi", &[]).await?;
+    let rows = client
+        .query("SELECT id, obec_id, nazev FROM katastralni_uzemi", &[])
+        .await?;
     Ok(rows
         .iter()
         .map(|row| KatastralniUzemi {
-            id: row.get("id"),
-            obec_id: row.get("obec_id"),
-            nazev: row.get("nazev"),
+            id: row.get(0),
+            obec_id: row.get(1),
+            nazev: row.get(2),
         })
         .collect())
 }
@@ -532,12 +543,12 @@ pub async fn delete_katastralni_uzemi(pool: Pool, id: i32) -> Result<u64> {
 // --- Bpej ---
 pub async fn get_bpej(pool: Pool) -> Result<Vec<Bpej>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM bpej", &[]).await?;
+    let rows = client.query("SELECT id, hodnota FROM bpej", &[]).await?;
     Ok(rows
         .iter()
         .map(|row| Bpej {
-            id: row.get("id"),
-            hodnota: row.get("hodnota"),
+            id: row.get(0),
+            hodnota: row.get(1),
         })
         .collect())
 }
@@ -572,13 +583,15 @@ pub async fn delete_bpej(pool: Pool, id: i32) -> Result<u64> {
 // --- TypRizeni ---
 pub async fn get_typ_rizeni(pool: Pool) -> Result<Vec<TypRizeni>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM typ_rizeni", &[]).await?;
+    let rows = client
+        .query("SELECT id, nazev, zkratka FROM typ_rizeni", &[])
+        .await?;
     Ok(rows
         .iter()
         .map(|row| TypRizeni {
-            id: row.get("id"),
-            nazev: row.get("nazev"),
-            zkratka: row.get("zkratka"),
+            id: row.get(0),
+            nazev: row.get(1),
+            zkratka: row.get(2),
         })
         .collect())
 }
@@ -616,12 +629,14 @@ pub async fn delete_typ_rizeni(pool: Pool, id: i32) -> Result<u64> {
 // --- TypOperace ---
 pub async fn get_typ_operace(pool: Pool) -> Result<Vec<TypOperace>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM typ_operace", &[]).await?;
+    let rows = client
+        .query("SELECT id, popis FROM typ_operace", &[])
+        .await?;
     Ok(rows
         .iter()
         .map(|row| TypOperace {
-            id: row.get("id"),
-            popis: row.get("popis"),
+            id: row.get(0),
+            popis: row.get(1),
         })
         .collect())
 }
@@ -659,12 +674,14 @@ pub async fn delete_typ_operace(pool: Pool, id: i32) -> Result<u64> {
 // --- TypUcastnika ---
 pub async fn get_typ_ucastnika(pool: Pool) -> Result<Vec<TypUcastnika>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM typ_ucastnika", &[]).await?;
+    let rows = client
+        .query("SELECT id, nazev FROM typ_ucastnika", &[])
+        .await?;
     Ok(rows
         .iter()
         .map(|row| TypUcastnika {
-            id: row.get("id"),
-            nazev: row.get("nazev"),
+            id: row.get(0),
+            nazev: row.get(1),
         })
         .collect())
 }
@@ -702,12 +719,14 @@ pub async fn delete_typ_ucastnika(pool: Pool, id: i32) -> Result<u64> {
 // --- UcastnikRizeni ---
 pub async fn get_ucastnik_rizeni(pool: Pool) -> Result<Vec<UcastnikRizeni>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM ucastnik_rizeni", &[]).await?;
+    let rows = client
+        .query("SELECT id, jmeno FROM ucastnik_rizeni", &[])
+        .await?;
     Ok(rows
         .iter()
         .map(|row| UcastnikRizeni {
-            id: row.get("id"),
-            jmeno: row.get("jmeno"),
+            id: row.get(0),
+            jmeno: row.get(1),
         })
         .collect())
 }
@@ -745,14 +764,19 @@ pub async fn delete_ucastnik_rizeni(pool: Pool, id: i32) -> Result<u64> {
 // --- ListVlastnictvi ---
 pub async fn get_list_vlastnictvi(pool: Pool) -> Result<Vec<ListVlastnictvi>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM list_vlastnictvi", &[]).await?;
+    let rows = client
+        .query(
+            "SELECT id, katastralni_uzemi_id, cislo_lv, vlastnicky_hash FROM list_vlastnictvi",
+            &[],
+        )
+        .await?;
     Ok(rows
         .iter()
         .map(|row| ListVlastnictvi {
-            id: row.get("id"),
-            katastralni_uzemi_id: row.get("katastralni_uzemi_id"),
-            cislo_lv: row.get("cislo_lv"),
-            vlastnicky_hash: row.get("vlastnicky_hash"),
+            id: row.get(0),
+            katastralni_uzemi_id: row.get(1),
+            cislo_lv: row.get(2),
+            vlastnicky_hash: row.get(3),
         })
         .collect())
 }
@@ -786,20 +810,20 @@ pub async fn delete_list_vlastnictvi(pool: Pool, id: i32) -> Result<u64> {
 // --- ParcelaRow ---
 pub async fn get_parcela_row(pool: Pool) -> Result<Vec<ParcelaRow>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM parcela", &[]).await?;
+    let rows = client.query("SELECT id, parcelni_cislo, cast_parcely, je_stavebni, vymera_metru_ctverecnich, ulice, cislo_popisne, katastralni_uzemi_id, bpej_id, list_vlastnictvi_id FROM parcela", &[]).await?;
     Ok(rows
         .iter()
         .map(|row| ParcelaRow {
-            id: row.get("id"),
-            parcelni_cislo: row.get("parcelni_cislo"),
-            cast_parcely: row.get("cast_parcely"),
-            je_stavebni: row.get("je_stavebni"),
-            vymera_metru_ctverecnich: row.get("vymera_metru_ctverecnich"),
-            ulice: row.get("ulice"),
-            cislo_popisne: row.get("cislo_popisne"),
-            katastralni_uzemi_id: row.get("katastralni_uzemi_id"),
-            bpej_id: row.get("bpej_id"),
-            list_vlastnictvi_id: row.get("list_vlastnictvi_id"),
+            id: row.get(0),
+            parcelni_cislo: row.get(1),
+            cast_parcely: row.get(2),
+            je_stavebni: row.get(3),
+            vymera_metru_ctverecnich: row.get(4),
+            ulice: row.get(5),
+            cislo_popisne: row.get(6),
+            katastralni_uzemi_id: row.get(7),
+            bpej_id: row.get(8),
+            list_vlastnictvi_id: row.get(9),
         })
         .collect())
 }
@@ -833,16 +857,16 @@ pub async fn delete_parcela_row(pool: Pool, id: i32) -> Result<u64> {
 // --- Rizeni ---
 pub async fn get_rizeni(pool: Pool) -> Result<Vec<Rizeni>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM rizeni", &[]).await?;
+    let rows = client.query("SELECT id, rok, cislo_rizeni, typ_rizeni_id, predmet, poznamka FROM rizeni", &[]).await?;
     Ok(rows
         .iter()
         .map(|row| Rizeni {
-            id: row.get("id"),
-            rok: row.get("rok"),
-            cislo_rizeni: row.get("cislo_rizeni"),
-            typ_rizeni_id: row.get("typ_rizeni_id"),
-            predmet: row.get("predmet"),
-            poznamka: row.get("poznamka"),
+            id: row.get(0),
+            rok: row.get(1),
+            cislo_rizeni: row.get(2),
+            typ_rizeni_id: row.get(3),
+            predmet: row.get(4),
+            poznamka: row.get(5),
         })
         .collect())
 }
@@ -876,13 +900,18 @@ pub async fn delete_rizeni(pool: Pool, id: i32) -> Result<u64> {
 // --- Vlastnictvi ---
 pub async fn get_vlastnictvi(pool: Pool) -> Result<Vec<Vlastnictvi>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM vlastnictvi", &[]).await?;
+    let rows = client
+        .query(
+            "SELECT parcela_id, majitel_id, podil_setin FROM vlastnictvi",
+            &[],
+        )
+        .await?;
     Ok(rows
         .iter()
         .map(|row| Vlastnictvi {
-            parcela_id: row.get("parcela_id"),
-            majitel_id: row.get("majitel_id"),
-            podil_setin: row.get("podil_setin"),
+            parcela_id: row.get(0),
+            majitel_id: row.get(1),
+            podil_setin: row.get(2),
         })
         .collect())
 }
@@ -924,16 +953,16 @@ pub async fn delete_vlastnictvi(pool: Pool, parcela_id: i32, majitel_id: i32) ->
 pub async fn get_bremeno_parcela_parcela(pool: Pool) -> Result<Vec<BremenoParcelaParcela>> {
     let client = pool.get().await?;
     let rows = client
-        .query("SELECT * FROM bremeno_parcela_parcela", &[])
+        .query("SELECT parcela_id, parcela_povinna_id, popis, datum_zrizeni, datum_pravnich_ucinku FROM bremeno_parcela_parcela", &[])
         .await?;
     Ok(rows
         .iter()
         .map(|row| BremenoParcelaParcela {
-            parcela_id: row.get("parcela_id"),
-            parcela_povinna_id: row.get("parcela_povinna_id"),
-            popis: row.get("popis"),
-            datum_zrizeni: row.get("datum_zrizeni"),
-            datum_pravnich_ucinku: row.get("datum_pravnich_ucinku"),
+            parcela_id: row.get(0),
+            parcela_povinna_id: row.get(1),
+            popis: row.get(2),
+            datum_zrizeni: row.get(3),
+            datum_pravnich_ucinku: row.get(4),
         })
         .collect())
 }
@@ -981,16 +1010,16 @@ pub async fn delete_bremeno_parcela_parcela(
 pub async fn get_bremeno_parcela_majitel(pool: Pool) -> Result<Vec<BremenoParcelaMajitel>> {
     let client = pool.get().await?;
     let rows = client
-        .query("SELECT * FROM bremeno_parcela_majitel", &[])
+        .query("SELECT parcela_id, majitel_povinny_id, popis, datum_zrizeni, datum_pravnich_ucinku FROM bremeno_parcela_majitel", &[])
         .await?;
     Ok(rows
         .iter()
         .map(|row| BremenoParcelaMajitel {
-            parcela_id: row.get("parcela_id"),
-            majitel_povinny_id: row.get("majitel_povinny_id"),
-            popis: row.get("popis"),
-            datum_zrizeni: row.get("datum_zrizeni"),
-            datum_pravnich_ucinku: row.get("datum_pravnich_ucinku"),
+            parcela_id: row.get(0),
+            majitel_povinny_id: row.get(1),
+            popis: row.get(2),
+            datum_zrizeni: row.get(3),
+            datum_pravnich_ucinku: row.get(4),
         })
         .collect())
 }
@@ -1037,12 +1066,14 @@ pub async fn delete_bremeno_parcela_majitel(
 // --- Plomba ---
 pub async fn get_plomba(pool: Pool) -> Result<Vec<Plomba>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM plomba", &[]).await?;
+    let rows = client
+        .query("SELECT rizeni_id, parcela_id FROM plomba", &[])
+        .await?;
     Ok(rows
         .iter()
         .map(|row| Plomba {
-            rizeni_id: row.get("rizeni_id"),
-            parcela_id: row.get("parcela_id"),
+            rizeni_id: row.get(0),
+            parcela_id: row.get(1),
         })
         .collect())
 }
@@ -1072,13 +1103,13 @@ pub async fn delete_plomba(pool: Pool, rizeni_id: i32, parcela_id: i32) -> Resul
 // --- RizeniOperaceRow ---
 pub async fn get_rizeni_operace_row(pool: Pool) -> Result<Vec<RizeniOperaceRow>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM rizeni_operace", &[]).await?;
+    let rows = client.query("SELECT rizeni_id, typ_operace_id, datum FROM rizeni_operace", &[]).await?;
     Ok(rows
         .iter()
         .map(|row| RizeniOperaceRow {
-            rizeni_id: row.get("rizeni_id"),
-            typ_operace_id: row.get("typ_operace_id"),
-            datum: row.get("datum"),
+            rizeni_id: row.get(0),
+            typ_operace_id: row.get(1),
+            datum: row.get(2),
         })
         .collect())
 }
@@ -1123,13 +1154,13 @@ pub async fn delete_rizeni_operace_row(
 // --- Ucast ---
 pub async fn get_ucast(pool: Pool) -> Result<Vec<Ucast>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT * FROM ucast", &[]).await?;
+    let rows = client.query("SELECT rizeni_id, ucastnik_rizeni_id, typ_ucastnika_id FROM ucast", &[]).await?;
     Ok(rows
         .iter()
         .map(|row| Ucast {
-            rizeni_id: row.get("rizeni_id"),
-            ucastnik_rizeni_id: row.get("ucastnik_rizeni_id"),
-            typ_ucastnika_id: row.get("typ_ucastnika_id"),
+            rizeni_id: row.get(0),
+            ucastnik_rizeni_id: row.get(1),
+            typ_ucastnika_id: row.get(2),
         })
         .collect())
 }

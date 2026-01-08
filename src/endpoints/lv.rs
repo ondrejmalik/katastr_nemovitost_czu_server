@@ -31,7 +31,7 @@ pub async fn get_lv_data(
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] =
             &[&katastralni_uzemi_a, &cislo_lv];
         let res =
-            query_part_a(pool_a, "SELECT * FROM fn_get_lv_part_a($1, $2);", params)
+            query_part_a(pool_a, "SELECT jmeno, prijmeni, bydliste, podil_setin FROM fn_get_lv_part_a($1, $2);", params)
                 .await;
         res.map(|v| (v, start.elapsed()))
     };
@@ -43,7 +43,7 @@ pub async fn get_lv_data(
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] =
             &[&katastralni_uzemi_b, &cislo_lv];
         let res =
-            query_part_b(pool_b, "SELECT * FROM fn_get_lv_part_b($1, $2);", params)
+            query_part_b(pool_b, "SELECT parcelni_cislo, je_stavebni, ulice, cislo_popisne, nazev_ku FROM fn_get_lv_part_b($1, $2);", params)
                 .await;
         res.map(|v| (v, start.elapsed()))
     };
@@ -56,7 +56,7 @@ pub async fn get_lv_data(
             &[&katastralni_uzemi_b_parcela, &cislo_lv];
         let res = query_part_b_parcela(
             pool_b_parcela,
-            "SELECT * FROM fn_get_lv_part_b_parcela($1, $2);",
+            "SELECT popis, datum_zrizeni, datum_pravnich_ucinku, je_stavebni_opravnena, parcelni_cislo_opravnena, cast_parcely_opravnena, je_stavebni_povinna, parcelni_cislo_povinna, cast_parcely_povinna FROM fn_get_lv_part_b_parcela($1, $2);",
             params,
         )
         .await;
@@ -71,7 +71,7 @@ pub async fn get_lv_data(
             &[&katastralni_uzemi_b_majitel, &cislo_lv];
         let res = query_part_b_majitel(
             pool_b_majitel,
-            "SELECT * FROM fn_get_lv_part_b_majitel($1, $2);",
+            "SELECT popis, datum_zrizeni, datum_pravnich_ucinku, je_stavebni_opravnena, parcelni_cislo_opravnena, cast_parcely_opravnena, jmeno_povinny, prijmeni_povinny, titul_povinny, rodne_cislo_povinny, ico_povinny FROM fn_get_lv_part_b_majitel($1, $2);",
             params,
         )
         .await;
@@ -85,7 +85,7 @@ pub async fn get_lv_data(
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] =
             &[&katastralni_uzemi_c, &cislo_lv];
         let res =
-            query_part_c(pool_c, "SELECT * FROM fn_get_lv_part_c($1, $2);", params)
+            query_part_c(pool_c, "SELECT popis, datum_zrizeni, datum_pravnich_ucinku, je_stavebni_opravnena, parcelni_cislo_opravnena, cast_parcely_opravnena, je_stavebni_povinna, parcelni_cislo_povinna, cast_parcely_povinna FROM fn_get_lv_part_c($1, $2);", params)
                 .await;
         res.map(|v| (v, start.elapsed()))
     };
@@ -97,7 +97,7 @@ pub async fn get_lv_data(
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] =
             &[&katastralni_uzemi_d, &cislo_lv];
         let res =
-            query_part_d(pool_d, "SELECT * FROM fn_get_lv_part_d($1, $2);", params)
+            query_part_d(pool_d, "SELECT je_stavebni, parcelni_cislo, cast_parcely, nazev_katastralniho_uzemi, typ_rizeni_zkratka, cislo_rizeni, rok_rizeni FROM fn_get_lv_part_d($1, $2);", params)
                 .await;
         res.map(|v| (v, start.elapsed()))
     };
@@ -109,7 +109,7 @@ pub async fn get_lv_data(
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] =
             &[&katastralni_uzemi_f, &cislo_lv];
         let res =
-            query_part_f(pool_f, "SELECT * FROM fn_get_lv_part_f($1, $2);", params)
+            query_part_f(pool_f, "SELECT je_stavebni, parcelni_cislo, cast_parcely, hodnota FROM fn_get_lv_part_f($1, $2);", params)
                 .await;
         res.map(|v| (v, start.elapsed()))
     };

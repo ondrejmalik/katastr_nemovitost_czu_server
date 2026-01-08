@@ -34,7 +34,7 @@ pub async fn get_parceala_data(
         ];
         query_parcela(
             pool,
-            "SELECT * FROM fn_get_parcela($1, $2, $3, $4);",
+            "SELECT je_stavebni, parcelni_cislo, cast_parcely, vymera_metru_ctverecnich, ulice, cislo_popisne, hodnota, cislo_lv FROM fn_get_parcela($1, $2, $3, $4);",
             params,
         )
         .await

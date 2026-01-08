@@ -69,7 +69,7 @@ pub async fn get_spravni_rizeni(
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] = &[&rizeni_id];
         let res = query_rizeni_predmet_poznamka(
             pool_predmet,
-            "SELECT * FROM fn_get_rizeni_predmet_poznamka_by_id($1);",
+            "SELECT predmet, poznamka FROM fn_get_rizeni_predmet_poznamka_by_id($1);",
             params,
         )
         .await;
@@ -82,7 +82,7 @@ pub async fn get_spravni_rizeni(
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] = &[&rizeni_id];
         let res = query_rizeni_ucastnici(
             pool_ucastnici,
-            "SELECT * FROM fn_get_ucastnici_rizeni_by_id($1);",
+            "SELECT typ_ucastnika, ucastnik_jmeno FROM fn_get_ucastnici_rizeni_by_id($1);",
             params,
         )
         .await;
@@ -95,7 +95,7 @@ pub async fn get_spravni_rizeni(
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] = &[&rizeni_id];
         let res = query_rizeni_operace(
             pool_operace,
-            "SELECT * FROM fn_get_operace_rizeni_by_id($1);",
+            "SELECT operace_popis, operace_datum FROM fn_get_operace_rizeni_by_id($1);",
             params,
         )
         .await;
