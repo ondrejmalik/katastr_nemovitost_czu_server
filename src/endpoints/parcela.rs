@@ -32,7 +32,7 @@ pub async fn get_parceala_data(
             &parcelni_cislo,
             &cast_parcely,
         ];
-        query_and_serialize_parcela(
+        query_parcela(
             pool,
             "SELECT * FROM fn_get_parcela($1, $2, $3, $4);",
             params,
@@ -46,10 +46,13 @@ pub async fn get_parceala_data(
             format!("Database error: {}", e),
         )
     })?;
-    if let Some(arr) = result.as_array() {
-        if arr.is_empty() {
-            return Err((StatusCode::NOT_FOUND, "Parcela not found".to_string()));
-        }
+    if result.is_empty() {
+        return Err((StatusCode::NOT_FOUND, "Parcela not found".to_string()));
     }
-    Ok(Json(result))
+    Ok(Json(serde_json::to_value(result).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Serialization error: {}", e),
+        )
+    })?))
 }

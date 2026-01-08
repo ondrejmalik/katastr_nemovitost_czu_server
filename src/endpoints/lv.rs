@@ -30,7 +30,9 @@ pub async fn get_lv_data(
         let start = std::time::Instant::now();
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] =
             &[&katastralni_uzemi_a, &cislo_lv];
-        let res = query_and_serialize_part_a(pool_a, "SELECT * FROM fn_get_lv_part_a($1, $2);", params).await;
+        let res =
+            query_part_a(pool_a, "SELECT * FROM fn_get_lv_part_a($1, $2);", params)
+                .await;
         res.map(|v| (v, start.elapsed()))
     };
 
@@ -40,7 +42,9 @@ pub async fn get_lv_data(
         let start = std::time::Instant::now();
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] =
             &[&katastralni_uzemi_b, &cislo_lv];
-        let res = query_and_serialize_part_b(pool_b, "SELECT * FROM fn_get_lv_part_b($1, $2);", params).await;
+        let res =
+            query_part_b(pool_b, "SELECT * FROM fn_get_lv_part_b($1, $2);", params)
+                .await;
         res.map(|v| (v, start.elapsed()))
     };
 
@@ -50,7 +54,7 @@ pub async fn get_lv_data(
         let start = std::time::Instant::now();
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] =
             &[&katastralni_uzemi_b_parcela, &cislo_lv];
-        let res = query_and_serialize_part_b_parcela(
+        let res = query_part_b_parcela(
             pool_b_parcela,
             "SELECT * FROM fn_get_lv_part_b_parcela($1, $2);",
             params,
@@ -65,7 +69,7 @@ pub async fn get_lv_data(
         let start = std::time::Instant::now();
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] =
             &[&katastralni_uzemi_b_majitel, &cislo_lv];
-        let res = query_and_serialize_part_b_majitel(
+        let res = query_part_b_majitel(
             pool_b_majitel,
             "SELECT * FROM fn_get_lv_part_b_majitel($1, $2);",
             params,
@@ -80,7 +84,9 @@ pub async fn get_lv_data(
         let start = std::time::Instant::now();
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] =
             &[&katastralni_uzemi_c, &cislo_lv];
-        let res = query_and_serialize_part_c(pool_c, "SELECT * FROM fn_get_lv_part_c($1, $2);", params).await;
+        let res =
+            query_part_c(pool_c, "SELECT * FROM fn_get_lv_part_c($1, $2);", params)
+                .await;
         res.map(|v| (v, start.elapsed()))
     };
 
@@ -90,7 +96,9 @@ pub async fn get_lv_data(
         let start = std::time::Instant::now();
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] =
             &[&katastralni_uzemi_d, &cislo_lv];
-        let res = query_and_serialize_part_d(pool_d, "SELECT * FROM fn_get_lv_part_d($1, $2);", params).await;
+        let res =
+            query_part_d(pool_d, "SELECT * FROM fn_get_lv_part_d($1, $2);", params)
+                .await;
         res.map(|v| (v, start.elapsed()))
     };
 
@@ -100,7 +108,9 @@ pub async fn get_lv_data(
         let start = std::time::Instant::now();
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] =
             &[&katastralni_uzemi_f, &cislo_lv];
-        let res = query_and_serialize_part_f(pool_f, "SELECT * FROM fn_get_lv_part_f($1, $2);", params).await;
+        let res =
+            query_part_f(pool_f, "SELECT * FROM fn_get_lv_part_f($1, $2);", params)
+                .await;
         res.map(|v| (v, start.elapsed()))
     };
 
@@ -112,7 +122,7 @@ pub async fn get_lv_data(
         (part_b_majitel, t_bm),
         (part_c, t_c),
         (part_d, t_d),
-        (part_f, t_f)
+        (part_f, t_f),
     ) = try_join!(
         task_a,
         task_b,
@@ -129,10 +139,8 @@ pub async fn get_lv_data(
         )
     })?;
 
-    if let Some(arr) = part_a.as_array() {
-        if arr.is_empty() {
-            return Err((StatusCode::NOT_FOUND, "LV not found".to_string()));
-        }
+    if part_a.is_empty() {
+        return Err((StatusCode::NOT_FOUND, "LV not found".to_string()));
     }
 
     let response_body = json!({

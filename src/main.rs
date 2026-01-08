@@ -1,22 +1,25 @@
 use anyhow::Result;
-use axum::{
-    middleware,
-    routing::get,
-    Extension, Router,
-};
+use axum::{Extension, Router, middleware, routing::get};
 use clap::Parser;
 use deadpool_postgres::{Config, ManagerConfig, RecyclingMethod, Runtime};
 use katastr_server::{
-    AppState, require_auth_cookie, track_latency,
-    bpej_handler, bremeno_parcela_majitel_handler, bremeno_parcela_parcela_handler,
-    get_authenticate, get_health, get_lv_data, get_parceala_data,
-    get_spravni_rizeni, katastralni_uzemi_handler, kraj_handler, list_vlastnictvi_handler,
-    majitel_handler, obec_handler, okres_handler, parcela_row_handler, plomba_handler,
-    rizeni_handler, rizeni_operace_row_handler, typ_operace_handler, typ_rizeni_handler,
-    typ_ucastnika_handler, ucast_handler, ucastnik_rizeni_handler, vlastnictvi_handler,
+    AppState, bpej_handler, bremeno_parcela_majitel_handler, bremeno_parcela_parcela_handler,
+    get_authenticate, get_health, get_lv_data, get_parceala_data, get_spravni_rizeni,
+    katastralni_uzemi_handler, kraj_handler, list_vlastnictvi_handler, majitel_handler,
+    obec_handler, okres_handler, parcela_row_handler, plomba_handler, require_auth_cookie,
+    rizeni_handler, rizeni_operace_row_handler, track_latency, typ_operace_handler,
+    typ_rizeni_handler, typ_ucastnika_handler, ucast_handler, ucastnik_rizeni_handler,
+    vlastnictvi_handler,
 };
 use tokio_postgres::NoTls;
 use tower_http::compression::CompressionLayer;
+use tracing::info;
+use tracing_subscriber::EnvFilter;
+
+// Add mimalloc as the global allocator for improved allocation performance
+// Note: mimalloc crate provides MiMalloc type and a #[global_allocator] wrapper
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -30,14 +33,32 @@ struct Args {
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() -> Result<()> {
+    // Parse CLI args first so we can configure tracing based on --no-print
     let args = Args::parse();
+
+    // Initialize tracing subscriber to enable tracing::info! output and respect RUST_LOG
+    // If --no-print is supplied, set the filter to "off" so nothing is logged.
+    let env_filter = if args.no_print {
+        EnvFilter::new("off")
+    } else {
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"))
+    };
+
+    tracing_subscriber::fmt()
+        .with_env_filter(env_filter)
+        .with_target(false)
+        .init();
+
+    // Quick sanity check: ensure the subscriber actually prints (will be suppressed when off)
+    info!("tracing initialized");
+
     let mut cfg = Config::new();
     cfg.user = Some("postgres".to_string());
     cfg.dbname = Some("postgres".to_string());
     cfg.host = Some("127.0.0.1".to_string());
     cfg.port = Some(5432);
     cfg.password = Some("heslo".to_string());
-    cfg.pool = Some(deadpool_postgres::PoolConfig::new(100)); // Increase pool size
+    cfg.pool = Some(deadpool_postgres::PoolConfig::new(10));
     cfg.manager = Some(ManagerConfig {
         recycling_method: RecyclingMethod::Fast,
     });
@@ -210,72 +231,54 @@ async fn main() -> Result<()> {
             let s = state.clone();
             move |req, next| {
                 let s = s.clone();
-                async move { track_latency(s, req, next).await }
+                async move { track_latency(req, next).await }
             }
         }));
 
-            let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
-
-            if !args.no_print {
-
-                println!("Server running on http://0.0.0.0:3000");
-
-                println!("Press 'q' then Enter to stop");
-
-            }
-
-        
-
-            axum::serve(listener, app)
-
-                .with_graceful_shutdown(wait_for_q())
-
-                .await?;
-
-            Ok(())
-
+    let listener = match tokio::net::TcpListener::bind("0.0.0.0:3000").await {
+        Ok(l) => {
+            info!("Bound to 0.0.0.0:3000");
+            l
         }
+        Err(e) => {
+            tracing::error!(%e, "Failed to bind to 0.0.0.0:3000");
+            return Err(anyhow::anyhow!(e));
+        }
+    };
 
-        
+    // server messages use tracing directly (will be suppressed when --no-print used)
+    info!("Server running on http://0.0.0.0:3000");
+    info!("Press 'q' then Enter to stop");
 
-        async fn wait_for_q() {
+    axum::serve(listener, app)
+        .with_graceful_shutdown(wait_for_q())
+        .await?;
 
-            use tokio::io::{AsyncBufReadExt, BufReader};
+    Ok(())
+}
 
-            let stdin = tokio::io::stdin();
+async fn wait_for_q() {
+    use tokio::io::{AsyncBufReadExt, BufReader};
 
-            let mut reader = BufReader::new(stdin);
+    let stdin = tokio::io::stdin();
 
-            let mut line = String::new();
+    let mut reader = BufReader::new(stdin);
 
-        
+    let mut line = String::new();
 
-            loop {
+    loop {
+        line.clear();
 
-                line.clear();
+        match reader.read_line(&mut line).await {
+            Ok(0) => break, // EOF
 
-                match reader.read_line(&mut line).await {
-
-                    Ok(0) => break, // EOF
-
-                    Ok(_) => {
-
-                        if line.trim() == "q" {
-
-                            break;
-
-                        }
-
-                    }
-
-                    Err(_) => break,
-
+            Ok(_) => {
+                if line.trim() == "q" {
+                    break;
                 }
-
             }
 
+            Err(_) => break,
         }
-
-        
-
-    
+    }
+}

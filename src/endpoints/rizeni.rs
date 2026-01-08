@@ -67,7 +67,7 @@ pub async fn get_spravni_rizeni(
     let task_predmet = async move {
         let start = std::time::Instant::now();
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] = &[&rizeni_id];
-        let res = query_and_serialize_rizeni_predmet_poznamka(
+        let res = query_rizeni_predmet_poznamka(
             pool_predmet,
             "SELECT * FROM fn_get_rizeni_predmet_poznamka_by_id($1);",
             params,
@@ -80,7 +80,7 @@ pub async fn get_spravni_rizeni(
     let task_ucastnici = async move {
         let start = std::time::Instant::now();
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] = &[&rizeni_id];
-        let res = query_and_serialize_rizeni_ucastnici(
+        let res = query_rizeni_ucastnici(
             pool_ucastnici,
             "SELECT * FROM fn_get_ucastnici_rizeni_by_id($1);",
             params,
@@ -93,7 +93,7 @@ pub async fn get_spravni_rizeni(
     let task_operace = async move {
         let start = std::time::Instant::now();
         let params: &[&(dyn tokio_postgres::types::ToSql + Sync)] = &[&rizeni_id];
-        let res = query_and_serialize_rizeni_operace(
+        let res = query_rizeni_operace(
             pool_operace,
             "SELECT * FROM fn_get_operace_rizeni_by_id($1);",
             params,
@@ -110,15 +110,11 @@ pub async fn get_spravni_rizeni(
             )
         })?;
 
-    if let (Some(p), Some(u), Some(o)) =
-        (predmet.as_array(), ucastnici.as_array(), operace.as_array())
-    {
-        if p.is_empty() && u.is_empty() && o.is_empty() {
-            return Err((
-                StatusCode::NOT_FOUND,
-                "Rizeni details not found".to_string(),
-            ));
-        }
+    if predmet.is_empty() && ucastnici.is_empty() && operace.is_empty() {
+        return Err((
+            StatusCode::NOT_FOUND,
+            "Rizeni details not found".to_string(),
+        ));
     }
 
     let response_body = json!({

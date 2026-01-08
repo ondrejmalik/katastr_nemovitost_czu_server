@@ -4,11 +4,11 @@ use rust_decimal::Decimal;
 
 use crate::models::*;
 
-pub async fn query_and_serialize_part_a(
+pub async fn query_part_a(
     pool: Pool,
     query: &str,
     params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
-) -> Result<serde_json::Value> {
+) -> Result<Vec<MajitelPartA>> {
     let client = pool.get().await?;
     let rows = client.query(query, params).await?;
 
@@ -23,15 +23,14 @@ pub async fn query_and_serialize_part_a(
         owners.push(owner);
     }
 
-    let json = serde_json::to_value(owners)?;
-    Ok(json)
+    Ok(owners)
 }
 
-pub async fn query_and_serialize_majitel(
+pub async fn query_majitel_custom(
     pool: Pool,
     query: &str,
     params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
-) -> Result<serde_json::Value> {
+) -> Result<Vec<Majitel>> {
     let client = pool.get().await?;
     let rows = client.query(query, params).await?;
 
@@ -49,8 +48,7 @@ pub async fn query_and_serialize_majitel(
         items.push(item);
     }
 
-    let json = serde_json::to_value(items)?;
-    Ok(json)
+    Ok(items)
 }
 
 pub async fn get_majitel(pool: Pool) -> Result<Vec<Majitel>> {
@@ -119,11 +117,11 @@ pub async fn delete_majitel(pool: Pool, id: i32) -> Result<u64> {
     Ok(rows_affected)
 }
 
-pub async fn query_and_serialize_part_b(
+pub async fn query_part_b(
     pool: Pool,
     query: &str,
     params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
-) -> Result<serde_json::Value> {
+) -> Result<Vec<Parcela>> {
     let client = pool.get().await?;
     let rows = client.query(query, params).await?;
 
@@ -139,15 +137,14 @@ pub async fn query_and_serialize_part_b(
         parcels.push(parcel);
     }
 
-    let json = serde_json::to_value(parcels)?;
-    Ok(json)
+    Ok(parcels)
 }
 
-pub async fn query_and_serialize_part_b_parcela(
+pub async fn query_part_b_parcela(
     pool: Pool,
     query: &str,
     params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
-) -> Result<serde_json::Value> {
+) -> Result<Vec<ParcelaB>> {
     let client = pool.get().await?;
     let rows = client.query(query, params).await?;
 
@@ -167,15 +164,14 @@ pub async fn query_and_serialize_part_b_parcela(
         parcels.push(parcel);
     }
 
-    let json = serde_json::to_value(parcels)?;
-    Ok(json)
+    Ok(parcels)
 }
 
-pub async fn query_and_serialize_part_b_majitel(
+pub async fn query_part_b_majitel(
     pool: Pool,
     query: &str,
     params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
-) -> Result<serde_json::Value> {
+) -> Result<Vec<MajitelB>> {
     let client = pool.get().await?;
     let rows = client.query(query, params).await?;
 
@@ -197,15 +193,14 @@ pub async fn query_and_serialize_part_b_majitel(
         items.push(item);
     }
 
-    let json = serde_json::to_value(items)?;
-    Ok(json)
+    Ok(items)
 }
 
-pub async fn query_and_serialize_part_c(
+pub async fn query_part_c(
     pool: Pool,
     query: &str,
     params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
-) -> Result<serde_json::Value> {
+) -> Result<Vec<PartC>> {
     let client = pool.get().await?;
     let rows = client.query(query, params).await?;
 
@@ -225,15 +220,14 @@ pub async fn query_and_serialize_part_c(
         items.push(item);
     }
 
-    let json = serde_json::to_value(items)?;
-    Ok(json)
+    Ok(items)
 }
 
-pub async fn query_and_serialize_part_d(
+pub async fn query_part_d(
     pool: Pool,
     query: &str,
     params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
-) -> Result<serde_json::Value> {
+) -> Result<Vec<PartD>> {
     let client = pool.get().await?;
     let rows = client.query(query, params).await?;
 
@@ -251,15 +245,14 @@ pub async fn query_and_serialize_part_d(
         items.push(item);
     }
 
-    let json = serde_json::to_value(items)?;
-    Ok(json)
+    Ok(items)
 }
 
-pub async fn query_and_serialize_part_f(
+pub async fn query_part_f(
     pool: Pool,
     query: &str,
     params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
-) -> Result<serde_json::Value> {
+) -> Result<Vec<PartF>> {
     let client = pool.get().await?;
     let rows = client.query(query, params).await?;
 
@@ -274,15 +267,14 @@ pub async fn query_and_serialize_part_f(
         items.push(item);
     }
 
-    let json = serde_json::to_value(items)?;
-    Ok(json)
+    Ok(items)
 }
 
-pub async fn query_and_serialize_parcela(
+pub async fn query_parcela(
     pool: Pool,
     query: &str,
     params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
-) -> Result<serde_json::Value> {
+) -> Result<Vec<FindParcela>> {
     let client = pool.get().await?;
     let rows = client.query(query, params).await?;
 
@@ -302,15 +294,14 @@ pub async fn query_and_serialize_parcela(
         items.push(item);
     }
 
-    let json = serde_json::to_value(items)?;
-    Ok(json)
+    Ok(items)
 }
 
-pub async fn query_and_serialize_rizeni_predmet_poznamka(
+pub async fn query_rizeni_predmet_poznamka(
     pool: Pool,
     query: &str,
     params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
-) -> Result<serde_json::Value> {
+) -> Result<Vec<RizeniPredmetPoznamka>> {
     let client = pool.get().await?;
     let rows = client.query(query, params).await?;
 
@@ -323,15 +314,14 @@ pub async fn query_and_serialize_rizeni_predmet_poznamka(
         items.push(item);
     }
 
-    let json = serde_json::to_value(items)?;
-    Ok(json)
+    Ok(items)
 }
 
-pub async fn query_and_serialize_rizeni_ucastnici(
+pub async fn query_rizeni_ucastnici(
     pool: Pool,
     query: &str,
     params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
-) -> Result<serde_json::Value> {
+) -> Result<Vec<RizeniUcastnik>> {
     let client = pool.get().await?;
     let rows = client.query(query, params).await?;
 
@@ -344,15 +334,14 @@ pub async fn query_and_serialize_rizeni_ucastnici(
         items.push(item);
     }
 
-    let json = serde_json::to_value(items)?;
-    Ok(json)
+    Ok(items)
 }
 
-pub async fn query_and_serialize_rizeni_operace(
+pub async fn query_rizeni_operace(
     pool: Pool,
     query: &str,
     params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
-) -> Result<serde_json::Value> {
+) -> Result<Vec<RizeniOperace>> {
     let client = pool.get().await?;
     let rows = client.query(query, params).await?;
 
@@ -365,8 +354,7 @@ pub async fn query_and_serialize_rizeni_operace(
         items.push(item);
     }
 
-    let json = serde_json::to_value(items)?;
-    Ok(json)
+    Ok(items)
 }
 
 // --- Kraj ---
