@@ -1,17 +1,20 @@
 use anyhow::Result;
 use axum::{
-    extract::Request,
-    http::StatusCode,
-    middleware::{self, Next},
-    response::IntoResponse,
+    middleware,
     routing::get,
     Extension, Router,
 };
 use clap::Parser;
 use deadpool_postgres::{Config, ManagerConfig, RecyclingMethod, Runtime};
-use katastr_server::AppState;
-use katastr_server::endpoints::*;
-use std::time::Instant;
+use katastr_server::{
+    AppState, require_auth_cookie, track_latency,
+    bpej_handler, bremeno_parcela_majitel_handler, bremeno_parcela_parcela_handler,
+    get_authenticate, get_health, get_lv_data, get_parceala_data,
+    get_spravni_rizeni, katastralni_uzemi_handler, kraj_handler, list_vlastnictvi_handler,
+    majitel_handler, obec_handler, okres_handler, parcela_row_handler, plomba_handler,
+    rizeni_handler, rizeni_operace_row_handler, typ_operace_handler, typ_rizeni_handler,
+    typ_ucastnika_handler, ucast_handler, ucastnik_rizeni_handler, vlastnictvi_handler,
+};
 use tokio_postgres::NoTls;
 use tower_http::compression::CompressionLayer;
 
@@ -20,94 +23,9 @@ use tower_http::compression::CompressionLayer;
 struct Args {
     #[arg(short, long, default_value = "")]
     password: String,
-}
 
-async fn track_latency(req: Request, next: Next) -> impl IntoResponse {
-    let start = Instant::now();
-    let method = req.method().clone();
-    let uri = req.uri().clone();
-    let response = next.run(req).await;
-    println!("Request: {} {} took {:?}", method, uri, start.elapsed());
-    response
-}
-
-async fn require_auth_cookie(state: AppState, req: Request, next: Next) -> impl IntoResponse {
-    // Allow safe methods without auth
-    let method = req.method().clone();
-    let path = req.uri().path().to_string();
-    println!("Auth middleware entry: {} {}", method, path);
-    if method == axum::http::Method::GET || method == axum::http::Method::OPTIONS {
-        println!("Auth middleware: allowing safe method {}", method);
-        return next.run(req).await;
-    }
-
-    // Allow health and auth endpoints without the cookie
-    if path == "/health" || path == "/auth" {
-        println!("Auth middleware: allowing public path {}", path);
-        return next.run(req).await;
-    }
-
-    // Parse cookie header for `katastr_pw`
-    let cookie_header = req
-        .headers()
-        .get(axum::http::header::COOKIE)
-        .and_then(|v| v.to_str().ok());
-
-    println!("Auth middleware: cookie header = {:?}", cookie_header);
-
-    let cookie_value = cookie_header.and_then(|s| {
-        s.split(';')
-            .map(|pair| pair.trim())
-            .find_map(|pair| {
-                let mut parts = pair.splitn(2, '=');
-                let key = parts.next()?;
-                let val = parts.next()?;
-                if key == "katastr_pw" {
-                    Some(val.to_string())
-                } else {
-                    None
-                }
-            })
-    });
-
-    let cookie_value = match cookie_value {
-        Some(v) => {
-            println!("Auth middleware: found cookie katastr_pw={v}");
-            v
-        }
-        None => {
-            println!("Auth middleware: missing auth cookie - returning 401");
-            return (StatusCode::UNAUTHORIZED, "Missing auth cookie".to_string()).into_response();
-        }
-    };
-
-    // Verify bcrypt hash in a blocking task using provided state
-    let hashed = state.password.clone();
-    let cookie_for_verify = cookie_value.clone();
-    let verify_res = tokio::task::spawn_blocking(move || bcrypt::verify(cookie_for_verify.as_str(), hashed.as_str()))
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Auth task join error: {}", e)));
-
-    let verify_res = match verify_res {
-        Ok(Ok(v)) => v,
-        Ok(Err(e)) => {
-            println!("Auth middleware: bcrypt error: {}", e);
-            return (StatusCode::INTERNAL_SERVER_ERROR, format!("Bcrypt error: {}", e)).into_response();
-        }
-        Err((status, msg)) => {
-            println!("Auth middleware: task join error: {} - {}", status, msg);
-            return (status, msg).into_response();
-        }
-    };
-
-    println!("Auth middleware: verification result = {}", verify_res);
-
-    if verify_res {
-        next.run(req).await
-    } else {
-        println!("Auth middleware: invalid auth - returning 401");
-        (StatusCode::UNAUTHORIZED, "Invalid auth".to_string()).into_response()
-    }
+    #[arg(long, default_value_t = false)]
+    no_print: bool,
 }
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
@@ -119,6 +37,7 @@ async fn main() -> Result<()> {
     cfg.host = Some("127.0.0.1".to_string());
     cfg.port = Some(5432);
     cfg.password = Some("heslo".to_string());
+    cfg.pool = Some(deadpool_postgres::PoolConfig::new(100)); // Increase pool size
     cfg.manager = Some(ManagerConfig {
         recycling_method: RecyclingMethod::Fast,
     });
@@ -126,13 +45,19 @@ async fn main() -> Result<()> {
     let password;
     match args.password.is_empty() {
         true => {
-            password = "$2b$12$rgOkHM0IWEmHYTidLt2WmeQANUGlG1wJxwSeoFX/XPltU/8okgKW6".to_string()
+            // Default password hash (cost 12)
+            password = "$2b$12$rgOkHM0IWEmHYTidLt2WmeQANUGlG1wJxwSeoFX/XPltU/8okgKW6".to_string();
         }
-        false => password = bcrypt::hash(args.password, bcrypt::DEFAULT_COST)?,
+        false => {
+            // User provided password: use DEFAULT_COST (12)
+            password = bcrypt::hash(args.password, bcrypt::DEFAULT_COST)?;
+        }
     }
 
     let state = AppState {
         password: password.to_string(),
+        no_print: args.no_print,
+        sessions: std::sync::Arc::new(std::sync::RwLock::new(std::collections::HashMap::new())),
     };
     let app = Router::new()
         .route("/health", get(get_health))
@@ -281,11 +206,76 @@ async fn main() -> Result<()> {
             }
         }))
         .layer(CompressionLayer::new())
-        .layer(middleware::from_fn(track_latency));
+        .layer(middleware::from_fn({
+            let s = state.clone();
+            move |req, next| {
+                let s = s.clone();
+                async move { track_latency(s, req, next).await }
+            }
+        }));
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
-    println!("Server running on http://0.0.0.0:3000");
+            let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
 
-    axum::serve(listener, app).await?;
-    Ok(())
-}
+            if !args.no_print {
+
+                println!("Server running on http://0.0.0.0:3000");
+
+                println!("Press 'q' then Enter to stop");
+
+            }
+
+        
+
+            axum::serve(listener, app)
+
+                .with_graceful_shutdown(wait_for_q())
+
+                .await?;
+
+            Ok(())
+
+        }
+
+        
+
+        async fn wait_for_q() {
+
+            use tokio::io::{AsyncBufReadExt, BufReader};
+
+            let stdin = tokio::io::stdin();
+
+            let mut reader = BufReader::new(stdin);
+
+            let mut line = String::new();
+
+        
+
+            loop {
+
+                line.clear();
+
+                match reader.read_line(&mut line).await {
+
+                    Ok(0) => break, // EOF
+
+                    Ok(_) => {
+
+                        if line.trim() == "q" {
+
+                            break;
+
+                        }
+
+                    }
+
+                    Err(_) => break,
+
+                }
+
+            }
+
+        }
+
+        
+
+    
