@@ -12,88 +12,90 @@ use katastr_server::{
     vlastnictvi_handler,
 };
 use mimalloc::MiMalloc;
+use std::net::SocketAddr;
 use tokio_postgres::NoTls;
 use tower_http::compression::CompressionLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
-
-// Add mimalloc as the global allocator for improved allocation performance
-// Note: mimalloc crate provides MiMalloc type and a #[global_allocator] wrapper
 #[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
-// struct TracingAllocator;
-//
-// unsafe impl GlobalAlloc for TracingAllocator {
-//     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-//         // Print to stderr (so it doesn't mix with program output)
-//         eprintln!(
-//             "ALLOC: {:?} bytes, align: {}",
-//             layout.size(),
-//             layout.align()
-//         );
-//         System.alloc(layout)
-//     }
-//
-//     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-//         eprintln!("FREE:  {:?} bytes", layout.size());
-//         System.dealloc(ptr, layout)
-//     }
-// }
-//
-// #[global_allocator]
-// static A: TracingAllocator = TracingAllocator;
+static GLOBAL_ALLOC: MiMalloc = MiMalloc;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    #[arg(short, long, default_value = "")]
-    password: String,
-
     #[arg(long, default_value_t = false)]
     no_print: bool,
-}
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 12)]
-async fn main() -> Result<()> {
-    // Parse CLI args first so we can configure tracing based on --no-print
+    #[arg(short, long, default_value = "")]
+    server_password: String,
+
+    #[arg(long, default_value_t = 3000)]
+    server_port: u16,
+
+    #[arg(long, default_value = "postgres")]
+    db_user: String,
+
+    #[arg(long, default_value = "postgres")]
+    db_name: String,
+
+    #[arg(long, default_value = "127.0.0.1")]
+    db_host: String,
+
+    #[arg(long, default_value = "heslo")]
+    db_password: String,
+    #[arg(long, default_value_t = 5432)]
+    db_port: u16,
+}
+fn main() {
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_io()
+        .worker_threads(num_cpus::get())
+        .build()
+        .unwrap();
+
+    rt.block_on(async {
+        if let Err(e) = run().await {
+            eprintln!("Application error: {:?}", e);
+            std::process::exit(1);
+        }
+    });
+}
+async fn run() -> Result<()> {
     let args = Args::parse();
 
-    // Initialize tracing subscriber to enable tracing::info! output and respect RUST_LOG
-    // If --no-print is supplied, set the filter to "off" so nothing is logged.
-    let env_filter = if args.no_print {
-        EnvFilter::new("off")
+    if args.no_print {
+        tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::new(
+                "katastr_server=off,tower_http=off,hyper=off",
+            ))
+            .with_target(false)
+            .init();
     } else {
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"))
-    };
+        tracing_subscriber::fmt().init();
+    }
 
-    tracing_subscriber::fmt()
-        .with_env_filter(env_filter)
-        .with_target(false)
-        .init();
-
-    // Quick sanity check: ensure the subscriber actually prints (will be suppressed when off)
     info!("tracing initialized");
 
     let mut cfg = Config::new();
-    cfg.user = Some("postgres".to_string());
-    cfg.dbname = Some("postgres".to_string());
-    cfg.host = Some("127.0.0.1".to_string());
-    cfg.port = Some(5432);
-    cfg.password = Some("heslo".to_string());
-    cfg.pool = Some(deadpool_postgres::PoolConfig::new(6));
+    cfg.user = Some(args.db_user.clone());
+    cfg.dbname = Some(args.db_name.clone());
+    cfg.host = Some(args.db_host.clone());
+    cfg.port = Some(args.db_port);
+    cfg.password = Some(args.db_password.to_string());
+    cfg.pool = Some(deadpool_postgres::PoolConfig::new(num_cpus::get() / 2));
     cfg.manager = Some(ManagerConfig {
         recycling_method: RecyclingMethod::Fast,
     });
     let pool = cfg.create_pool(Some(Runtime::Tokio1), NoTls)?;
     let password;
-    match args.password.is_empty() {
+    match args.server_password.is_empty() {
         true => {
             // Default password hash (cost 12)
             password = "$2b$12$rgOkHM0IWEmHYTidLt2WmeQANUGlG1wJxwSeoFX/XPltU/8okgKW6".to_string();
         }
         false => {
             // User provided password: use DEFAULT_COST (12)
-            password = bcrypt::hash(args.password, bcrypt::DEFAULT_COST)?;
+            password = bcrypt::hash(args.server_password, bcrypt::DEFAULT_COST)?;
         }
     }
 
@@ -250,24 +252,23 @@ async fn main() -> Result<()> {
         }))
         .layer(CompressionLayer::new())
         .layer(middleware::from_fn({
-            move |req, next| {
-                async move { track_latency(req, next).await }
-            }
+            move |req, next| async move { track_latency(req, next).await }
         }));
 
-    let listener = match tokio::net::TcpListener::bind("0.0.0.0:3000").await {
+    let ip = SocketAddr::from(([0, 0, 0, 0], args.server_port));
+
+    let listener = match tokio::net::TcpListener::bind(ip).await {
         Ok(l) => {
-            info!("Bound to 0.0.0.0:3000");
+            info!("{}", ip);
             l
         }
         Err(e) => {
-            tracing::error!(%e, "Failed to bind to 0.0.0.0:3000");
+            tracing::error!(%e, "Failed to bind to {}", ip);
             return Err(anyhow::anyhow!(e));
         }
     };
 
-    // server messages use tracing directly (will be suppressed when --no-print used)
-    info!("Server running on http://0.0.0.0:3000");
+    info!("Server running on http://{}", ip);
     info!("Press 'q' then Enter to stop");
 
     axum::serve(listener, app)

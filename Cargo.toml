@@ -12,6 +12,7 @@ path = "src/main.rs"
 lto = "fat"
 
 [dependencies]
+num_cpus = "1.17"
 axum = { version = "0.8.3", features = ["http2"] }
 tokio = { version = "1.44.2", features = ["rt-multi-thread", "signal"] }
 tower-http = { version = "0.6.2", features = ["compression-full"] }

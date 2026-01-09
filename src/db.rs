@@ -15,10 +15,10 @@ pub async fn query_part_a(
     let mut owners = Vec::new();
     for row in rows {
         let owner = MajitelPartA {
-            jmeno: row.try_get(0)?,
-            prijmeni: row.try_get(1)?,
-            bydliste: row.try_get(2)?,
-            podil_setin: row.try_get::<_, i32>(3)? as i64,
+            jmeno: row.try_get("jmeno")?,
+            prijmeni: row.try_get("prijmeni")?,
+            bydliste: row.try_get("bydliste")?,
+            podil_setin: row.try_get::<_, i32>("podil_setin")? as i64,
         };
         owners.push(owner);
     }
@@ -37,13 +37,13 @@ pub async fn query_majitel_custom(
     let mut items = Vec::new();
     for row in rows {
         let item = Majitel {
-            id: row.try_get(0)?,
-            jmeno: row.try_get(1)?,
-            prijmeni: row.try_get(2)?,
-            titul: row.try_get(3)?,
-            bydliste: row.try_get(4)?,
-            rodne_cislo: row.try_get(5)?,
-            ico: row.try_get(6)?,
+            id: row.try_get("id")?,
+            jmeno: row.try_get("jmeno")?,
+            prijmeni: row.try_get("prijmeni")?,
+            titul: row.try_get("titul")?,
+            bydliste: row.try_get("bydliste")?,
+            rodne_cislo: row.try_get("rodne_cislo")?,
+            ico: row.try_get("ico")?,
         };
         items.push(item);
     }
@@ -63,13 +63,13 @@ pub async fn get_majitel(pool: Pool) -> Result<Vec<Majitel>> {
     let mut items = Vec::new();
     for row in rows {
         let item = Majitel {
-            id: row.try_get(0)?,
-            jmeno: row.try_get(1)?,
-            prijmeni: row.try_get(2)?,
-            titul: row.try_get(3)?,
-            bydliste: row.try_get(4)?,
-            rodne_cislo: row.try_get(5)?,
-            ico: row.try_get(6)?,
+            id: row.try_get("id")?,
+            jmeno: row.try_get("jmeno")?,
+            prijmeni: row.try_get("prijmeni")?,
+            titul: row.try_get("titul")?,
+            bydliste: row.try_get("bydliste")?,
+            rodne_cislo: row.try_get("rodne_cislo")?,
+            ico: row.try_get("ico")?,
         };
         items.push(item);
     }
@@ -133,11 +133,11 @@ pub async fn query_part_b(
     let mut parcels = Vec::new();
     for row in rows {
         let parcel = Parcela {
-            parcelni_cislo: row.try_get::<_, i32>(0)? as i64,
-            je_stavebni: row.try_get(1)?,
-            ulice: row.try_get(2)?,
-            cislo_popisne: row.try_get(3)?,
-            nazev_ku: row.try_get(4)?,
+            parcelni_cislo: row.try_get::<_, i32>("parcelni_cislo")? as i64,
+            je_stavebni: row.try_get("je_stavebni")?,
+            ulice: row.try_get("ulice")?,
+            cislo_popisne: row.try_get("cislo_popisne")?,
+            nazev_ku: row.try_get("nazev_ku")?,
         };
         parcels.push(parcel);
     }
@@ -156,15 +156,15 @@ pub async fn query_part_b_parcela(
     let mut parcels = Vec::new();
     for row in rows {
         let parcel = ParcelaB {
-            popis: row.try_get(0)?,
-            datum_zrizeni: row.try_get(1)?,
-            datum_pravnich_ucinku: row.try_get(2)?,
-            je_stavebni_opravnena: row.try_get(3)?,
-            parcelni_cislo_opravnena: row.try_get::<_, i32>(4)? as i64,
-            cast_parcely_opravnena: row.try_get::<_, i32>(5)? as i64,
-            je_stavebni_povinna: row.try_get(6)?,
-            parcelni_cislo_povinna: row.try_get::<_, i32>(7)? as i64,
-            cast_parcely_povinna: row.try_get::<_, i32>(8)? as i64,
+            popis: row.try_get("popis")?,
+            datum_zrizeni: row.try_get("datum_zrizeni")?,
+            datum_pravnich_ucinku: row.try_get("datum_pravnich_ucinku")?,
+            je_stavebni_opravnena: row.try_get("je_stavebni_opravnena")?,
+            parcelni_cislo_opravnena: row.try_get::<_, i32>("parcelni_cislo_opravnena")? as i64,
+            cast_parcely_opravnena: row.try_get::<_, i32>("cast_parcely_opravnena")? as i64,
+            je_stavebni_povinna: row.try_get("je_stavebni_povinna")?,
+            parcelni_cislo_povinna: row.try_get::<_, i32>("parcelni_cislo_povinna")? as i64,
+            cast_parcely_povinna: row.try_get::<_, i32>("cast_parcely_povinna")? as i64,
         };
         parcels.push(parcel);
     }
@@ -183,17 +183,17 @@ pub async fn query_part_b_majitel(
     let mut items = Vec::new();
     for row in rows {
         let item = MajitelB {
-            popis: row.try_get(0)?,
-            datum_zrizeni: row.try_get(1)?,
-            datum_pravnich_ucinku: row.try_get(2)?,
-            je_stavebni_opravnena: row.try_get(3)?,
-            parcelni_cislo_opravnena: row.try_get::<_, i32>(4)? as i64,
-            cast_parcely_opravnena: row.try_get::<_, i32>(5)? as i64,
-            jmeno_povinny: row.try_get(6)?,
-            prijmeni_povinny: row.try_get(7)?,
-            titul_povinny: row.try_get(8)?,
-            rodne_cislo_povinny: row.try_get(9)?,
-            ico_povinny: row.try_get(10)?,
+            popis: row.try_get("popis")?,
+            datum_zrizeni: row.try_get("datum_zrizeni")?,
+            datum_pravnich_ucinku: row.try_get("datum_pravnich_ucinku")?,
+            je_stavebni_opravnena: row.try_get("je_stavebni_opravnena")?,
+            parcelni_cislo_opravnena: row.try_get::<_, i32>("parcelni_cislo_opravnena")? as i64,
+            cast_parcely_opravnena: row.try_get::<_, i32>("cast_parcely_opravnena")? as i64,
+            jmeno_povinny: row.try_get("jmeno_povinny")?,
+            prijmeni_povinny: row.try_get("prijmeni_povinny")?,
+            titul_povinny: row.try_get("titul_povinny")?,
+            rodne_cislo_povinny: row.try_get("rodne_cislo_povinny")?,
+            ico_povinny: row.try_get("ico_povinny")?,
         };
         items.push(item);
     }
@@ -212,15 +212,15 @@ pub async fn query_part_c(
     let mut items = Vec::new();
     for row in rows {
         let item = PartC {
-            popis: row.try_get(0)?,
-            datum_zrizeni: row.try_get(1)?,
-            datum_pravnich_ucinku: row.try_get(2)?,
-            je_stavebni_opravnena: row.try_get(3)?,
-            parcelni_cislo_opravnena: row.try_get::<_, i32>(4)? as i64,
-            cast_parcely_opravnena: row.try_get::<_, i32>(5)? as i64,
-            je_stavebni_povinna: row.try_get(6)?,
-            parcelni_cislo_povinna: row.try_get::<_, i32>(7)? as i64,
-            cast_parcely_povinna: row.try_get::<_, i32>(8)? as i64,
+            popis: row.try_get("popis")?,
+            datum_zrizeni: row.try_get("datum_zrizeni")?,
+            datum_pravnich_ucinku: row.try_get("datum_pravnich_ucinku")?,
+            je_stavebni_opravnena: row.try_get("je_stavebni_opravnena")?,
+            parcelni_cislo_opravnena: row.try_get::<_, i32>("parcelni_cislo_opravnena")? as i64,
+            cast_parcely_opravnena: row.try_get::<_, i32>("cast_parcely_opravnena")? as i64,
+            je_stavebni_povinna: row.try_get("je_stavebni_povinna")?,
+            parcelni_cislo_povinna: row.try_get::<_, i32>("parcelni_cislo_povinna")? as i64,
+            cast_parcely_povinna: row.try_get::<_, i32>("cast_parcely_povinna")? as i64,
         };
         items.push(item);
     }
@@ -239,13 +239,13 @@ pub async fn query_part_d(
     let mut items = Vec::new();
     for row in rows {
         let item = PartD {
-            je_stavebni: row.try_get(0)?,
-            parcelni_cislo: row.try_get::<_, i32>(1)? as i64,
-            cast_parcely: row.try_get::<_, i32>(2)? as i64,
-            nazev_katastralniho_uzemi: row.try_get(3)?,
-            typ_rizeni_zkratka: row.try_get(4)?,
-            cislo_rizeni: row.try_get::<_, i32>(5)? as i64,
-            rok_rizeni: row.try_get::<_, i32>(6)? as i64,
+            je_stavebni: row.try_get("je_stavebni")?,
+            parcelni_cislo: row.try_get::<_, i32>("parcelni_cislo")? as i64,
+            cast_parcely: row.try_get::<_, i32>("cast_parcely")? as i64,
+            nazev_katastralniho_uzemi: row.try_get("nazev_katastralniho_uzemi")?,
+            typ_rizeni_zkratka: row.try_get("typ_rizeni_zkratka")?,
+            cislo_rizeni: row.try_get::<_, i32>("cislo_rizeni")? as i64,
+            rok_rizeni: row.try_get::<_, i32>("rok_rizeni")? as i64,
         };
         items.push(item);
     }
@@ -264,10 +264,10 @@ pub async fn query_part_f(
     let mut items = Vec::new();
     for row in rows {
         let item = PartF {
-            je_stavebni: row.try_get(0)?,
-            parcelni_cislo: row.try_get::<_, i32>(1)? as i64,
-            cast_parcely: row.try_get::<_, i32>(2)? as i64,
-            hodnota: row.try_get::<_, Option<i32>>(3)?.map(|v| v as i64),
+            je_stavebni: row.try_get("je_stavebni")?,
+            parcelni_cislo: row.try_get::<_, i32>("parcelni_cislo")? as i64,
+            cast_parcely: row.try_get::<_, i32>("cast_parcely")? as i64,
+            hodnota: row.try_get::<_, Option<i32>>("hodnota")?.map(|v| v as i64),
         };
         items.push(item);
     }
@@ -286,15 +286,15 @@ pub async fn query_parcela(
     let mut items = Vec::new();
     for row in rows {
         let item = FindParcela {
-            je_stavebni: row.try_get(0)?,
-            parcelni_cislo: row.try_get::<_, i32>(1)? as i64,
-            cast_parcely: row.try_get::<_, i32>(2)? as i64,
+            je_stavebni: row.try_get("je_stavebni")?,
+            parcelni_cislo: row.try_get::<_, i32>("parcelni_cislo")? as i64,
+            cast_parcely: row.try_get::<_, i32>("cast_parcely")? as i64,
             vymera_metru_ctverecnich: row
-                .try_get::<_, Option<Decimal>>(3)?,
-            ulice: row.try_get(4)?,
-            cislo_popisne: row.try_get(5)?,
-            hodnota: row.try_get::<_, Option<i32>>(6)?.map(|v| v as i64),
-            cislo_lv: row.try_get::<_, i32>(7)? as i64,
+                .try_get::<_, Option<Decimal>>("vymera_metru_ctverecnich")?,
+            ulice: row.try_get("ulice")?,
+            cislo_popisne: row.try_get("cislo_popisne")?,
+            hodnota: row.try_get::<_, Option<i32>>("hodnota")?.map(|v| v as i64),
+            cislo_lv: row.try_get::<_, i32>("cislo_lv")? as i64,
         };
         items.push(item);
     }
@@ -313,8 +313,8 @@ pub async fn query_rizeni_predmet_poznamka(
     let mut items = Vec::new();
     for row in rows {
         let item = RizeniPredmetPoznamka {
-            predmet: row.try_get(0)?,
-            poznamka: row.try_get(1)?,
+            predmet: row.try_get("predmet")?,
+            poznamka: row.try_get("poznamka")?,
         };
         items.push(item);
     }
@@ -333,8 +333,8 @@ pub async fn query_rizeni_ucastnici(
     let mut items = Vec::new();
     for row in rows {
         let item = RizeniUcastnik {
-            typ_ucastnika: row.try_get(0)?,
-            ucastnik_jmeno: row.try_get(1)?,
+            typ_ucastnika: row.try_get("typ_ucastnika")?,
+            ucastnik_jmeno: row.try_get("ucastnik_jmeno")?,
         };
         items.push(item);
     }
@@ -353,8 +353,8 @@ pub async fn query_rizeni_operace(
     let mut items = Vec::new();
     for row in rows {
         let item = RizeniOperace {
-            operace_popis: row.try_get(0)?,
-            operace_datum: row.try_get(1)?,
+            operace_popis: row.try_get("operace_popis")?,
+            operace_datum: row.try_get("operace_datum")?,
         };
         items.push(item);
     }
@@ -857,7 +857,12 @@ pub async fn delete_parcela_row(pool: Pool, id: i32) -> Result<u64> {
 // --- Rizeni ---
 pub async fn get_rizeni(pool: Pool) -> Result<Vec<Rizeni>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT id, rok, cislo_rizeni, typ_rizeni_id, predmet, poznamka FROM rizeni", &[]).await?;
+    let rows = client
+        .query(
+            "SELECT id, rok, cislo_rizeni, typ_rizeni_id, predmet, poznamka FROM rizeni",
+            &[],
+        )
+        .await?;
     Ok(rows
         .iter()
         .map(|row| Rizeni {
@@ -1103,7 +1108,12 @@ pub async fn delete_plomba(pool: Pool, rizeni_id: i32, parcela_id: i32) -> Resul
 // --- RizeniOperaceRow ---
 pub async fn get_rizeni_operace_row(pool: Pool) -> Result<Vec<RizeniOperaceRow>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT rizeni_id, typ_operace_id, datum FROM rizeni_operace", &[]).await?;
+    let rows = client
+        .query(
+            "SELECT rizeni_id, typ_operace_id, datum FROM rizeni_operace",
+            &[],
+        )
+        .await?;
     Ok(rows
         .iter()
         .map(|row| RizeniOperaceRow {
@@ -1154,7 +1164,12 @@ pub async fn delete_rizeni_operace_row(
 // --- Ucast ---
 pub async fn get_ucast(pool: Pool) -> Result<Vec<Ucast>> {
     let client = pool.get().await?;
-    let rows = client.query("SELECT rizeni_id, ucastnik_rizeni_id, typ_ucastnika_id FROM ucast", &[]).await?;
+    let rows = client
+        .query(
+            "SELECT rizeni_id, ucastnik_rizeni_id, typ_ucastnika_id FROM ucast",
+            &[],
+        )
+        .await?;
     Ok(rows
         .iter()
         .map(|row| Ucast {
@@ -1184,3 +1199,10 @@ pub async fn delete_ucast(
     let rows = client.execute("DELETE FROM ucast WHERE rizeni_id = $1 AND ucastnik_rizeni_id = $2 AND typ_ucastnika_id = $3", &[&rizeni_id, &ucastnik_rizeni_id, &typ_ucastnika_id]).await?;
     Ok(rows)
 }
+
+
+
+
+
+
+
